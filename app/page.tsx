@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import { CreateInvoiceRequest } from '../lib/models/Invoice';
 import { ParsedInvoiceData } from '../lib/services/ai';
 import { InvoicePreview } from '../components/InvoicePreview';
@@ -8,6 +10,8 @@ import { InvoicePreview } from '../components/InvoicePreview';
 type ViewMode = 'landing' | 'instant' | 'success';
 
 export default function Page() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -131,6 +135,16 @@ export default function Page() {
     setViewMode('instant');
   };
 
+  const handleSignInClick = () => {
+    if (user) {
+      // User is already signed in, go to dashboard
+      router.push('/dashboard');
+    } else {
+      // User is not signed in, go to sign-in page
+      router.push('/sign-in');
+    }
+  };
+
   // Landing Page View
   if (viewMode === 'landing') {
     return (
@@ -173,12 +187,17 @@ export default function Page() {
               
               {/* Sign In / Account Option */}
               <div className="flex flex-col items-center space-y-4">
-                <button className="w-24 h-24 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-[1.1] shadow-xl hover:shadow-2xl group">
+                <button 
+                  onClick={handleSignInClick}
+                  className="w-24 h-24 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-[1.1] shadow-xl hover:shadow-2xl group"
+                >
                   <svg className="w-10 h-10 text-white group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </button>
-                <h3 className="text-xl font-semibold text-gray-900">Sign In</h3>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {user ? 'Dashboard' : 'Sign In'}
+                </h3>
               </div>
 
               {/* OR Divider */}
