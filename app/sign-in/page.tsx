@@ -4,12 +4,6 @@
 export const dynamic = 'force-dynamic';
 
 import { SignIn } from "@clerk/nextjs";
-import { Suspense } from "react";
-
-// Prevent static generation
-export async function generateStaticParams() {
-  return [];
-}
 
 export default function SignInPage() {
   return (
