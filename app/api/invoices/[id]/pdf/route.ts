@@ -26,12 +26,9 @@ export async function GET(
     }
 
     // Convert MongoDB object to expected format
-    const invoiceData = {
-      ...rawInvoiceData,
-      _id: rawInvoiceData._id?.toString() || '',
-    };
+    const invoiceData = rawInvoiceData as any;
 
-    console.log('🧾 Generating PDF for invoice:', (invoiceData as any).invoiceNumber);
+    console.log('🧾 Generating PDF for invoice:', invoiceData.invoiceNumber);
 
     // Register fonts for PDF generation
     console.log('📝 Registering fonts for PDF...');
@@ -45,7 +42,7 @@ export async function GET(
       throw new Error('Failed to create valid PDF React element.');
     }
 
-    const pdfBuffer = await renderToBuffer(pdfElement);
+    const pdfBuffer = await renderToBuffer(pdfElement as any);
     console.log('✅ PDF Buffer created, size:', pdfBuffer.length);
 
     // Format filename for download
