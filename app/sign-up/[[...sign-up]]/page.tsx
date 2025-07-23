@@ -1,3 +1,5 @@
+"use client";
+
 // Force dynamic rendering to prevent static generation issues with Clerk
 export const dynamic = 'force-dynamic';
 
