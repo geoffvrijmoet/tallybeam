@@ -5,12 +5,12 @@ import { createEasternDate } from '../../../../lib/utils';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { id } = params;
+    const { id } = await params;
     
     console.log('🔍 Fetching invoice with ID:', id);
 
@@ -43,12 +43,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     
     console.log('📝 Updating invoice with ID:', id, 'Data:', body);

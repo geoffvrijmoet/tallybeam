@@ -5,6 +5,7 @@ import connectToDatabase from '../../../../../lib/db';
 import InvoiceModel from '../../../../../lib/models/InvoiceModel';
 import { registerFonts } from '../../../../../lib/fonts';
 import React from 'react';
+import { Invoice } from '../../../../../lib/models/Invoice';
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
     }
 
     // Convert MongoDB object to expected format
-    const invoiceData = rawInvoiceData as any;
+    const invoiceData = rawInvoiceData as unknown as Invoice;
 
     console.log('🧾 Generating PDF for invoice:', invoiceData.invoiceNumber);
 
