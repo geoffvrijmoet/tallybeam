@@ -141,7 +141,7 @@ export default function Page() {
       router.push('/dashboard');
     } else {
       // User is not signed in, go to sign-in page
-      router.push('/sign-in');
+      router.push('/sign-in/[[...sign-in]]');
     }
   };
 

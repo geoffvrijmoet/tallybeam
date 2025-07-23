@@ -12,7 +12,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (isLoaded && !user) {
-      router.push('/sign-in');
+      router.push('/sign-in/[[...sign-in]]');
       return;
     }
 
