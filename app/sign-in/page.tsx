@@ -1,10 +1,15 @@
+// Force dynamic rendering to prevent static generation issues with Clerk
+export const dynamic = 'force-dynamic';
+
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
 import { Suspense } from "react";
 
-// Force dynamic rendering to prevent static generation issues with Clerk
-export const dynamic = 'force-dynamic';
+// Prevent static generation
+export async function generateStaticParams() {
+  return [];
+}
 
 export default function SignInPage() {
   return (

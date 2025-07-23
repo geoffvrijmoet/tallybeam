@@ -44,6 +44,7 @@ export const metadata = {
   },
 };
 import './globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -57,7 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-white antialiased font-sans">
-        {children}
+        <ClerkProvider>
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
