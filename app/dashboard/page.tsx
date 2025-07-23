@@ -17,10 +17,19 @@ export default function DashboardPage() {
     }
 
     if (user) {
-      // Fetch user's invoices
+      // Sync user with MongoDB and fetch invoices
+      syncUser();
       fetchInvoices();
     }
   }, [user, isLoaded, router]);
+
+  const syncUser = async () => {
+    try {
+      await fetch('/api/user/sync', { method: 'POST' });
+    } catch (error) {
+      console.error('Error syncing user:', error);
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
