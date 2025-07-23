@@ -24,8 +24,7 @@ const InvoiceSchema: Schema = new Schema(
     invoiceNumber: {
       type: String,
       required: true,
-      unique: true,
-      index: true
+      unique: true
     },
     clientName: {
       type: String,

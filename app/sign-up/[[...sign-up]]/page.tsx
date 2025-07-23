@@ -1,4 +1,7 @@
 import { SignUp } from "@clerk/nextjs";
+
+// Force dynamic rendering to prevent static generation issues with Clerk
+export const dynamic = 'force-dynamic';
  
 export default function Page() {
   return (
