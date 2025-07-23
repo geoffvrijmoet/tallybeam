@@ -12,6 +12,7 @@
       "dom.iterable",
       "esnext"
     ],
+    "types": ["react", "react-dom"],
     "allowJs": true,
     "noEmit": true,
     "incremental": true,
