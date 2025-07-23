@@ -1,0 +1,33 @@
+{
+  "name": "tallybeam",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "deploy": "npm run build && npx vercel --prod",
+    "deploy:staging": "npm run build && npx vercel"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@react-pdf/renderer": "^4.1.3",
+    "mongodb": "^6.3.0",
+    "mongoose": "^8.0.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "autoprefixer": "latest",
+    "postcss": "latest",
+    "tailwindcss": "^3.4.1",
+    "typescript": "latest"
+  },
+  "description": "tallybeam - Web application",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/geoffvrijmoet/tallybeam.git"
+  },
+  "author": "Geoff Vrijmoet",
+  "license": "MIT"
+}
