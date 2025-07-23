@@ -46,3 +46,10 @@ scripts/create-suppliers.ts
 scripts/dedupe-transactions.ts
 
 /secrets
+
+# Large binary files that might cause push issues
+*.ttf
+*.woff
+*.woff2
+*.pdf
+public/fonts/
