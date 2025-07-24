@@ -5,16 +5,16 @@ import { useParams } from 'next/navigation';
 
 interface Invoice {
   _id: string;
-  invoiceNumber: string;
+  transactionNumber: string;
   clientName: string;
   clientEmail?: string;
-  amount: number;
+  totalDebit: number;
   currency: string;
   dueDate: string;
   issueDate: string;
   description: string;
   notes?: string;
-  status: string;
+  invoiceStatus: string;
   paymentMethod?: string;
   venmoUsername?: string;
   createdAt: string;
@@ -93,51 +93,64 @@ export default function InvoicePage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Invoice #{invoice.invoiceNumber}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Invoice #{invoice.transactionNumber}</h1>
           <p className="text-gray-600">Professional Invoice from TallyBeam</p>
         </div>
 
         {/* Invoice Content */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-8">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-8">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Invoice Header */}
+          <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-8">
+            <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Invoice</h2>
-                <p className="text-sm text-gray-600">#{invoice.invoiceNumber}</p>
+                <h2 className="text-2xl font-bold mb-2">TallyBeam</h2>
+                <p className="text-violet-100">Professional Invoice Service</p>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-600">
-                  Invoice Date: {formatDate(invoice.issueDate)}
-                </div>
+                <div className="text-3xl font-bold mb-1">INVOICE</div>
+                <div className="text-violet-100">#{invoice.transactionNumber}</div>
               </div>
             </div>
+          </div>
 
-            {/* Invoice Details */}
+          {/* Invoice Details */}
+          <div className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* Bill To */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Bill To:</h3>
-                <p className="text-lg font-medium text-gray-900">{invoice.clientName}</p>
-                {invoice.clientEmail && (
-                  <p className="text-sm text-gray-600">{invoice.clientEmail}</p>
-                )}
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Bill To:</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="font-medium text-gray-900">{invoice.clientName}</div>
+                  {invoice.clientEmail && (
+                    <div className="text-gray-600 mt-1">{invoice.clientEmail}</div>
+                  )}
+                </div>
               </div>
-              <div className="md:text-right">
-                <div className="space-y-1">
+
+              {/* Invoice Info */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Details:</h3>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Due Date:</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {formatDate(invoice.dueDate)}
-                    </span>
+                    <span className="text-gray-600">Invoice Number:</span>
+                    <span className="font-medium">#{invoice.transactionNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Status:</span>
-                    <span className={`text-sm font-medium capitalize ${
-                      invoice.status === 'paid' ? 'text-green-600' :
-                      invoice.status === 'overdue' ? 'text-red-600' :
-                      'text-yellow-600'
+                    <span className="text-gray-600">Issue Date:</span>
+                    <span className="font-medium">{formatDate(invoice.issueDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Due Date:</span>
+                    <span className="font-medium">{formatDate(invoice.dueDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <span className={`font-medium px-2 py-1 rounded text-xs ${
+                      invoice.invoiceStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                      invoice.invoiceStatus === 'overdue' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {invoice.status}
+                      {invoice.invoiceStatus?.toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -146,25 +159,22 @@ export default function InvoicePage() {
 
             {/* Invoice Items */}
             <div className="mb-8">
-              <div className="bg-gray-50 rounded-lg p-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Items:</h3>
+              <div className="bg-gray-50 rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead>
-                    <tr className="text-left">
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Description
-                      </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">
-                        Amount
-                      </th>
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white rounded-md">
+                  <tbody className="bg-white divide-y divide-gray-200">
                     <tr>
-                      <td className="px-4 py-4 text-sm text-gray-900 rounded-l-md">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {invoice.description}
                       </td>
-                      <td className="px-4 py-4 text-sm font-semibold text-gray-900 text-right rounded-r-md">
-                        {invoice.currency} {invoice.amount.toFixed(2)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                        ${invoice.totalDebit.toFixed(2)}
                       </td>
                     </tr>
                   </tbody>
@@ -173,50 +183,37 @@ export default function InvoicePage() {
             </div>
 
             {/* Total */}
-            <div className="flex justify-end mb-8">
-              <div className="w-64">
-                <div className="flex justify-between py-2 border-t border-gray-200">
-                  <span className="text-sm text-gray-600">Subtotal:</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {invoice.currency} {invoice.amount.toFixed(2)}
-                  </span>
+            <div className="flex justify-end">
+              <div className="bg-violet-50 p-6 rounded-lg w-64">
+                <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
+                  <span>Total:</span>
+                  <span>${invoice.totalDebit.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between py-2 border-t-2 border-gray-300">
-                  <span className="text-base font-semibold text-gray-900">Total:</span>
-                  <span className="text-base font-bold text-gray-900">
-                    {invoice.currency} {invoice.amount.toFixed(2)}
-                  </span>
-                </div>
+                <div className="text-sm text-gray-600 mt-1">USD</div>
               </div>
             </div>
 
-            {/* Payment Instructions */}
-            {invoice.paymentMethod === 'venmo' && (
-              <div className="bg-blue-50 rounded-lg p-4 mb-8">
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">Payment Instructions</h4>
-                <div className="text-sm text-blue-800">
-                  <p className="mb-2">Please send payment via:</p>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Venmo</span>
-                    <span className="font-mono text-blue-900">
-                      @{invoice.venmoUsername || 'yourvenmo'}
-                    </span>
-                  </div>
-                </div>
+            {/* Notes */}
+            {invoice.notes && (
+              <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Notes:</h4>
+                <p className="text-gray-700">{invoice.notes}</p>
               </div>
             )}
 
-            {/* Notes */}
-            {invoice.notes && (
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Notes</h4>
-                <p className="text-sm text-gray-600">{invoice.notes}</p>
+            {/* Payment Instructions */}
+            {invoice.paymentMethod === 'venmo' && invoice.venmoUsername && (
+              <div className="mt-8 p-4 bg-green-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Payment Instructions:</h4>
+                <p className="text-gray-700">
+                  Please send payment via Venmo to <span className="font-medium">@{invoice.venmoUsername}</span>
+                </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Action Buttons */}
         <div className="mt-8 flex justify-center space-x-4">
           <a 
             href="/" 

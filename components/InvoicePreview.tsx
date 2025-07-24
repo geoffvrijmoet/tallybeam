@@ -65,7 +65,7 @@ export function InvoicePreview({ data, invoiceNumber }: InvoicePreviewProps) {
       }
 
       const result = await response.json();
-      setCreatedInvoiceId(result.id);
+      setCreatedInvoiceId(result._id);
 
       // Copy link to clipboard
       const invoiceUrl = `${window.location.origin}/invoices/${result.id}`;
@@ -112,8 +112,8 @@ export function InvoicePreview({ data, invoiceNumber }: InvoicePreviewProps) {
         }
 
         const result = await response.json();
-        invoiceId = result.id;
-        setCreatedInvoiceId(result.id);
+        invoiceId = result._id;
+        setCreatedInvoiceId(result._id);
       } else {
         // If invoice exists and we have custom dates, update the existing invoice
         const hasCustomDates = customDueDate || customInvoiceDate;

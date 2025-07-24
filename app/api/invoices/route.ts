@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '../../../lib/db';
-import InvoiceModel from '../../../lib/models/InvoiceModel';
-import { CreateInvoiceRequest } from '../../../lib/models/Invoice';
+import { auth } from '@clerk/nextjs/server';
+import { InvoiceService } from '../../../lib/services/invoiceService';
+import { CreateInvoiceRequest } from '../../../lib/models/Transaction';
 import { createEasternDate, createTodayEasternDateString, createFutureDateString } from '../../../lib/utils';
-
-function generateInvoiceNumber(): string {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `TB-${timestamp}-${random}`;
-}
 
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase();
+    const { userId } = await auth();
     
     const body: CreateInvoiceRequest = await request.json();
 
@@ -38,31 +32,28 @@ export async function POST(request: NextRequest) {
     const dueDate = body.dueDate ? createEasternDate(body.dueDate) : createEasternDate(createFutureDateString(30));
 
     const invoiceData = {
-      invoiceNumber: generateInvoiceNumber(),
       clientName: body.clientName,
-      clientEmail: body.clientEmail,
+      clientEmail: body.clientEmail || undefined,
       amount: body.amount,
       currency: body.currency || 'USD',
-      dueDate,
-      issueDate,
+      dueDate: dueDate.toISOString(),
+      issueDate: issueDate.toISOString(),
       description: body.description,
-      notes: body.notes,
-      status: 'draft' as const,
+      notes: body.notes || undefined,
       paymentMethod: body.paymentMethod || 'venmo',
-      venmoUsername: body.venmoUsername // This maps venmoUsername to venmoUsername
-    };
+      venmoUsername: body.venmoUsername || undefined
+    } as CreateInvoiceRequest;
 
-    const invoice = new InvoiceModel(invoiceData);
-    const savedInvoice = await invoice.save();
+    const savedTransaction = await InvoiceService.createInvoice(invoiceData, userId || undefined);
 
-    console.log('✅ Invoice created:', savedInvoice.invoiceNumber, 'ID:', savedInvoice._id);
+    console.log('✅ Invoice created:', savedTransaction.transactionNumber, 'ID:', savedTransaction._id);
 
     return NextResponse.json(
       { 
         success: true, 
-        invoiceNumber: savedInvoice.invoiceNumber,
-        id: savedInvoice._id,
-        invoice: savedInvoice
+        invoiceNumber: savedTransaction.transactionNumber,
+        _id: savedTransaction._id,
+        invoice: savedTransaction
       },
       { status: 201 }
     );
@@ -78,26 +69,35 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
+    const { userId } = await auth();
     
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const status = searchParams.get('status') || undefined;
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = parseInt(searchParams.get('skip') || '0');
 
-    const filter = status ? { status } : {};
+    const filter: any = { type: 'invoice' }; // Only get invoice transactions
+    if (userId) {
+      filter.userId = userId; // Only filter by userId if authenticated
+    }
+    if (status) {
+      filter.invoiceStatus = status; // Use invoiceStatus instead of status
+    }
     
-    const invoices = await InvoiceModel
+    // Import Transaction model
+    const { Transaction } = await import('../../../lib/models/Transaction');
+    
+    const transactions = await Transaction
       .find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const total = await InvoiceModel.countDocuments(filter);
+    const total = await Transaction.countDocuments(filter);
 
     return NextResponse.json({
-      invoices,
+      invoices: transactions, // Keep the API response format the same
       pagination: {
         total,
         limit,

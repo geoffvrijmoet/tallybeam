@@ -8,7 +8,10 @@ const isPublicRoute = createRouteMatcher([
   "/invoices/[id]/pdf",
   "/api/parse",
   "/",
-  "/api/user/sync"
+  "/api/user/sync",
+  "/api/accounting/setup",
+  "/api/accounting/accounts",
+  "/api/accounting/transactions",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

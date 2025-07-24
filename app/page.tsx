@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { CreateInvoiceRequest } from '../lib/models/Invoice';
+import { CreateInvoiceRequest } from '../lib/models/Transaction';
 import { ParsedInvoiceData } from '../lib/services/ai';
 import { InvoicePreview } from '../components/InvoicePreview';
 
@@ -112,6 +112,10 @@ export default function Page() {
         const result = await response.json();
         setInvoiceNumber(result.invoiceNumber);
         setViewMode('success');
+      } else {
+        const errorData = await response.json();
+        console.error('Error creating invoice:', errorData);
+        // You could add error handling here if needed
       }
     } catch (error) {
       console.error('Error creating invoice:', error);

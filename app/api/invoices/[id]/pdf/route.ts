@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoiceDocument } from '../../../../../components/pdf/invoice-document';
 import connectToDatabase from '../../../../../lib/db';
-import InvoiceModel from '../../../../../lib/models/InvoiceModel';
+import { Transaction } from '../../../../../lib/models/Transaction';
 import { registerFonts } from '../../../../../lib/fonts';
 import React from 'react';
-import { Invoice } from '../../../../../lib/models/Invoice';
+import { ITransaction } from '../../../../../lib/models/Transaction';
 
 export async function GET(
   request: NextRequest,
@@ -18,18 +18,18 @@ export async function GET(
       return NextResponse.json({ message: 'Invalid or missing Invoice ID' }, { status: 400 });
     }
 
-    // Connect to database and fetch invoice
+    // Connect to database and fetch transaction (invoice type)
     await connectToDatabase();
-    const rawInvoiceData = await InvoiceModel.findById(id).lean();
+    const rawTransactionData = await Transaction.findOne({ _id: id, type: 'invoice' }).lean();
 
-    if (!rawInvoiceData) {
+    if (!rawTransactionData) {
       return NextResponse.json({ message: 'Invoice not found' }, { status: 404 });
     }
 
     // Convert MongoDB object to expected format
-    const invoiceData = rawInvoiceData as unknown as Invoice;
+    const transactionData = rawTransactionData as unknown as ITransaction;
 
-    console.log('🧾 Generating PDF for invoice:', invoiceData.invoiceNumber);
+    console.log('🧾 Generating PDF for invoice:', transactionData.transactionNumber);
 
     // Register fonts for PDF generation
     console.log('📝 Registering fonts for PDF...');
@@ -37,7 +37,7 @@ export async function GET(
 
     // Generate PDF
     console.log('📄 Rendering PDF document...');
-    const pdfElement = React.createElement(InvoiceDocument, { invoice: invoiceData as any });
+    const pdfElement = React.createElement(InvoiceDocument, { invoice: transactionData as any });
     
     if (!React.isValidElement(pdfElement)) {
       throw new Error('Failed to create valid PDF React element.');
@@ -56,14 +56,9 @@ export async function GET(
         .replace(/-+/g, '-');
     };
 
-    const clientNameFormatted = formatFilenamePart(invoiceData.clientName);
-    const invoiceNumberFormatted = formatFilenamePart(invoiceData.invoiceNumber);
-    
-    const filename = clientNameFormatted
-      ? `${clientNameFormatted}-${invoiceNumberFormatted}.pdf`
-      : `${invoiceNumberFormatted}-invoice.pdf`;
+    const filename = `invoice-${formatFilenamePart(transactionData.clientName)}-${transactionData.transactionNumber}.pdf`;
 
-    // Return PDF response
+    // Return PDF with proper headers
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
@@ -76,7 +71,7 @@ export async function GET(
   } catch (error) {
     console.error('❌ Error generating PDF:', error);
     return NextResponse.json(
-      { message: 'Internal Server Error generating PDF' }, 
+      { error: 'Failed to generate PDF' },
       { status: 500 }
     );
   }

@@ -1,342 +1,393 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
-// Define styles for the PDF to match InvoicePreview exactly
+// Register fonts
+Font.register({
+  family: 'Inter',
+  fonts: [
+    { src: '/fonts/Inter-Regular.ttf', fontWeight: 'normal' },
+    { src: '/fonts/Inter-Bold.ttf', fontWeight: 'bold' },
+    { src: '/fonts/Inter-Medium.ttf', fontWeight: 'medium' },
+  ],
+});
+
 const styles = StyleSheet.create({
   page: {
-    padding: 32, // Match the p-8 (32px) from preview
+    flexDirection: 'column',
+    backgroundColor: '#ffffff',
+    padding: 40,
     fontFamily: 'Inter',
-    fontSize: 11,
-    color: '#333',
   },
-  // Header matching InvoicePreview layout
-  headerSection: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 32, // mb-8
+    marginBottom: 40,
+    paddingBottom: 20,
+    borderBottom: '1px solid #e5e7eb',
   },
-  invoiceTitle: {
-    fontSize: 24, // text-3xl
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
-    marginBottom: 8,
+  companyInfo: {
+    flex: 1,
   },
-  invoiceNumber: {
-    fontSize: 10, // text-sm
-    color: '#4b5563', // text-gray-600
-  },
-  invoiceDateSection: {
-    textAlign: 'right',
-  },
-  invoiceDateLabel: {
-    fontSize: 10, // text-sm
-    color: '#4b5563', // text-gray-600
-  },
-  // Invoice Details section
-  detailsSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 32, // mb-8
-  },
-  billToSection: {
-    width: '48%',
-  },
-  billToHeader: {
-    fontSize: 10, // text-sm
-    fontFamily: 'Inter-Bold',
-    marginBottom: 8,
-    color: '#374151', // text-gray-700
-  },
-  billToName: {
-    fontSize: 12, // text-lg
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
-  },
-  dueDateSection: {
-    width: '48%',
-    textAlign: 'right',
-  },
-  dueDateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  companyName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
     marginBottom: 4,
   },
-  dueDateLabel: {
-    fontSize: 10, // text-sm
-    color: '#4b5563', // text-gray-600
+  companySubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 8,
   },
-  dueDateValue: {
-    fontSize: 10, // text-sm
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
+  invoiceInfo: {
+    alignItems: 'flex-end',
   },
-  // Table styling to match preview
-  tableContainer: {
-    marginBottom: 32, // mb-8
-    backgroundColor: '#f9fafb', // bg-gray-50
-    borderRadius: 8, // rounded-lg
-    padding: 4, // p-1
+  invoiceLabel: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#7c3aed',
+    marginBottom: 4,
+  },
+  invoiceNumber: {
+    fontSize: 14,
+    fontWeight: 'medium',
+    color: '#374151',
+  },
+  content: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 30,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  grid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  column: {
+    flex: 1,
+  },
+  billToBox: {
+    backgroundColor: '#f9fafb',
+    padding: 16,
+    borderRadius: 8,
+  },
+  clientName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  clientEmail: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  infoBox: {
+    backgroundColor: '#f9fafb',
+    padding: 16,
+    borderRadius: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  infoValue: {
+    fontSize: 12,
+    fontWeight: 'medium',
+    color: '#1f2937',
+  },
+  statusBadge: {
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   table: {
-    width: '100%',
+    marginTop: 20,
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingHorizontal: 16, // px-4
-    paddingVertical: 12, // py-3
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottom: '1px solid #e5e7eb',
   },
-  tableHeaderText: {
-    fontSize: 9, // text-xs
-    fontFamily: 'Inter-Bold',
-    color: '#374151', // text-gray-700
+  tableHeaderCell: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#374151',
     textTransform: 'uppercase',
   },
-  tableHeaderDesc: {
-    width: '70%',
-  },
-  tableHeaderAmount: {
-    width: '30%',
+  tableHeaderCellRight: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#374151',
+    textTransform: 'uppercase',
     textAlign: 'right',
-  },
-  tableRowContainer: {
-    backgroundColor: '#ffffff', // bg-white
-    borderRadius: 6, // rounded-md
   },
   tableRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16, // px-4
-    paddingVertical: 16, // py-4
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottom: '1px solid #f3f4f6',
   },
-  tableDescCell: {
-    width: '70%',
-    fontSize: 10, // text-sm
-    color: '#111827', // text-gray-900
+  tableCell: {
+    flex: 1,
+    fontSize: 12,
+    color: '#1f2937',
   },
-  tableAmountCell: {
-    width: '30%',
-    fontSize: 10, // text-sm
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
+  tableCellRight: {
+    flex: 1,
+    fontSize: 12,
+    color: '#1f2937',
     textAlign: 'right',
+    fontWeight: 'medium',
   },
-  // Total section matching preview
   totalSection: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 32, // mb-8
+    marginTop: 20,
+    alignItems: 'flex-end',
   },
   totalBox: {
-    width: 160, // w-64 equivalent
+    backgroundColor: '#f3e8ff',
+    padding: 20,
+    borderRadius: 8,
+    width: 200,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8, // py-2
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb', // border-gray-200
+    alignItems: 'center',
+    marginBottom: 4,
   },
   totalLabel: {
-    fontSize: 10, // text-sm
-    color: '#4b5563', // text-gray-600
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
   },
-  totalValue: {
-    fontSize: 10, // text-sm
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
+  totalAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
   },
-  totalFinalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8, // py-2
-    borderTopWidth: 2,
-    borderTopColor: '#d1d5db', // border-gray-300
+  currency: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
   },
-  totalFinalLabel: {
-    fontSize: 12, // text-base
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
+  notes: {
+    marginTop: 30,
+    padding: 16,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
   },
-  totalFinalValue: {
-    fontSize: 12, // text-base
-    fontFamily: 'Inter-Bold',
-    color: '#111827', // text-gray-900
+  notesTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1e40af',
+    marginBottom: 8,
   },
-  // Payment section matching preview blue box
-  paymentSection: {
-    backgroundColor: '#dbeafe', // bg-blue-50
-    borderRadius: 8, // rounded-lg
-    padding: 16, // p-4
-    marginBottom: 32,
+  notesText: {
+    fontSize: 12,
+    color: '#1e3a8a',
+    lineHeight: 1.5,
+  },
+  paymentInstructions: {
+    marginTop: 30,
+    padding: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
   },
   paymentTitle: {
-    fontSize: 10, // text-sm
-    fontFamily: 'Inter-Bold',
-    color: '#1e3a8a', // text-blue-900
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#166534',
     marginBottom: 8,
   },
   paymentText: {
-    fontSize: 10, // text-sm
-    color: '#1e40af', // text-blue-800
-    marginBottom: 8,
-  },
-  paymentVenmoText: {
-    fontSize: 10, // text-sm
-    color: '#1e40af', // text-blue-800
-    fontFamily: 'Inter-Bold',
-  },
-  notesSection: {
-    marginTop: 30,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    fontSize: 10,
-    color: '#555',
-    lineHeight: 1.4,
-  },
-  notesTitle: {
-    fontFamily: 'Helvetica-Bold',
-    marginBottom: 5,
+    fontSize: 12,
+    color: '#15803d',
+    lineHeight: 1.5,
   },
   footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 40,
-    right: 40,
+    marginTop: 40,
+    paddingTop: 20,
+    borderTop: '1px solid #e5e7eb',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 10,
+    color: '#9ca3af',
     textAlign: 'center',
-    fontSize: 9,
-    color: '#888',
   },
 });
 
-// Invoice interface matching TallyBeam's structure
-interface TallyBeamInvoice {
+interface Invoice {
   _id: string;
-  invoiceNumber: string;
+  transactionNumber: string;
   clientName: string;
   clientEmail?: string;
-  amount: number;
+  totalDebit: number;
   currency: string;
-  dueDate: Date;
-  issueDate: Date;
+  dueDate: string;
+  issueDate: string;
   description: string;
   notes?: string;
-  status: string;
+  invoiceStatus: string;
   paymentMethod?: string;
   venmoUsername?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface InvoiceDocumentProps {
-  invoice: TallyBeamInvoice;
+  invoice: Invoice;
 }
 
-// Helper functions
-const formatDate = (dateInput: Date | string): string => {
-  if (!dateInput) return 'N/A';
-  try {
-    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    if (isNaN(date.getTime())) return 'Invalid Date';
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  } catch {
-    return 'Invalid Date';
-  }
-};
-
 export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return { backgroundColor: '#dcfce7', color: '#166534' };
+      case 'overdue':
+        return { backgroundColor: '#fee2e2', color: '#991b1b' };
+      default:
+        return { backgroundColor: '#fef3c7', color: '#92400e' };
+    }
+  };
+
   return (
-    <Document title={`Invoice ${invoice.invoiceNumber} - ${invoice.clientName}`}>
+    <Document title={`Invoice ${invoice.transactionNumber} - ${invoice.clientName}`}>
       <Page size="A4" style={styles.page}>
-        {/* Header - matching InvoicePreview exactly */}
-        <View style={styles.headerSection}>
-          <View>
-            <Text style={styles.invoiceTitle}>Invoice</Text>
-            <Text style={styles.invoiceNumber}>#{invoice.invoiceNumber}</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.companyInfo}>
+            <Text style={styles.companyName}>TallyBeam</Text>
+            <Text style={styles.companySubtitle}>Professional Invoice Service</Text>
           </View>
-          <View style={styles.invoiceDateSection}>
-            <Text style={styles.invoiceDateLabel}>
-              Invoice Date: {formatDate(invoice.issueDate)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Invoice Details - matching two-column layout */}
-        <View style={styles.detailsSection}>
-          <View style={styles.billToSection}>
-            <Text style={styles.billToHeader}>Bill To:</Text>
-            <Text style={styles.billToName}>{invoice.clientName}</Text>
-          </View>
-          <View style={styles.dueDateSection}>
-            <View style={styles.dueDateRow}>
-              <Text style={styles.dueDateLabel}>Due Date:</Text>
-              <Text style={styles.dueDateValue}>
-                {formatDate(invoice.dueDate)}
-              </Text>
-            </View>
+          <View style={styles.invoiceInfo}>
+            <Text style={styles.invoiceLabel}>INVOICE</Text>
+            <Text style={styles.invoiceNumber}>#{invoice.transactionNumber}</Text>
           </View>
         </View>
 
-        {/* Invoice Items Table - matching preview styling exactly */}
-        <View style={styles.tableContainer}>
-          <View style={styles.table}>
-            {/* Header Row */}
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, styles.tableHeaderDesc]}>
-                Description
-              </Text>
-              <Text style={[styles.tableHeaderText, styles.tableHeaderAmount]}>
-                Amount
-              </Text>
-            </View>
-            {/* Data Row */}
-            <View style={styles.tableRowContainer}>
-              <View style={styles.tableRow}>
-                <Text style={styles.tableDescCell}>
-                  {invoice.description}
-                </Text>
-                <Text style={styles.tableAmountCell}>
-                  ${invoice.amount.toFixed(2)}
-                </Text>
+        {/* Content */}
+        <View style={styles.content}>
+          {/* Invoice Details */}
+          <View style={styles.section}>
+            <View style={styles.grid}>
+              {/* Bill To */}
+              <View style={styles.column}>
+                <Text style={styles.sectionTitle}>Bill To:</Text>
+                <View style={styles.billToBox}>
+                  <Text style={styles.clientName}>{invoice.clientName}</Text>
+                  {invoice.clientEmail && (
+                    <Text style={styles.clientEmail}>{invoice.clientEmail}</Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Invoice Info */}
+              <View style={styles.column}>
+                <Text style={styles.sectionTitle}>Invoice Details:</Text>
+                <View style={styles.infoBox}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Invoice Number:</Text>
+                    <Text style={styles.infoValue}>#{invoice.transactionNumber}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Issue Date:</Text>
+                    <Text style={styles.infoValue}>{formatDate(invoice.issueDate)}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Due Date:</Text>
+                    <Text style={styles.infoValue}>{formatDate(invoice.dueDate)}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Status:</Text>
+                    <Text style={[styles.statusBadge, getStatusColor(invoice.invoiceStatus)]}>
+                      {invoice.invoiceStatus?.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
-        </View>
 
-        {/* Totals - matching preview layout */}
-        <View style={styles.totalSection}>
-          <View style={styles.totalBox}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal:</Text>
-              <Text style={styles.totalValue}>
-                ${invoice.amount.toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.totalFinalRow}>
-              <Text style={styles.totalFinalLabel}>Total:</Text>
-              <Text style={styles.totalFinalValue}>
-                ${invoice.amount.toFixed(2)}
-              </Text>
+          {/* Invoice Items */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Items:</Text>
+            <View style={styles.table}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderCell}>Description</Text>
+                <Text style={styles.tableHeaderCellRight}>Amount</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCell}>{invoice.description}</Text>
+                <Text style={styles.tableCellRight}>${invoice.totalDebit.toFixed(2)}</Text>
+              </View>
             </View>
           </View>
+
+          {/* Total */}
+          <View style={styles.totalSection}>
+            <View style={styles.totalBox}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total:</Text>
+                <Text style={styles.totalAmount}>${invoice.totalDebit.toFixed(2)}</Text>
+              </View>
+              <Text style={styles.currency}>USD</Text>
+            </View>
+          </View>
+
+          {/* Notes */}
+          {invoice.notes && (
+            <View style={styles.notes}>
+              <Text style={styles.notesTitle}>Notes:</Text>
+              <Text style={styles.notesText}>{invoice.notes}</Text>
+            </View>
+          )}
+
+          {/* Payment Instructions */}
+          {invoice.paymentMethod === 'venmo' && invoice.venmoUsername && (
+            <View style={styles.paymentInstructions}>
+              <Text style={styles.paymentTitle}>Payment Instructions:</Text>
+              <Text style={styles.paymentText}>
+                Please send payment via Venmo to @{invoice.venmoUsername}
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Payment Instructions - matching blue box styling */}
-        {invoice.paymentMethod === 'venmo' && invoice.venmoUsername && (
-          <View style={styles.paymentSection}>
-            <Text style={styles.paymentTitle}>Payment Instructions</Text>
-            <Text style={styles.paymentText}>
-              Please send payment via:
-            </Text>
-            <Text style={styles.paymentVenmoText}>
-              Venmo @{invoice.venmoUsername}
-            </Text>
-          </View>
-        )}
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Thank you for your business! • Generated by TallyBeam
+          </Text>
+        </View>
       </Page>
     </Document>
   );

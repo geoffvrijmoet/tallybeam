@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '../../../../lib/db';
-import InvoiceModel from '../../../../lib/models/InvoiceModel';
+import { Transaction } from '../../../../lib/models/Transaction';
 import { createEasternDate } from '../../../../lib/utils';
 
 export async function GET(
@@ -14,10 +14,10 @@ export async function GET(
     
     console.log('🔍 Fetching invoice with ID:', id);
 
-    // Find invoice by MongoDB ObjectId
-    const invoice = await InvoiceModel.findById(id).lean();
+    // Find transaction by MongoDB ObjectId, filtering for invoice type
+    const transaction = await Transaction.findOne({ _id: id, type: 'invoice' }).lean();
 
-    if (!invoice) {
+    if (!transaction) {
       console.log('❌ Invoice not found:', id);
       return NextResponse.json(
         { error: 'Invoice not found' },
@@ -29,7 +29,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      invoice
+      invoice: transaction
     });
 
   } catch (error) {
@@ -62,14 +62,14 @@ export async function PUT(
       updateData.issueDate = createEasternDate(updateData.issueDate);
     }
 
-    // Find and update the invoice
-    const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
-      id,
+    // Find and update the transaction (invoice type)
+    const updatedTransaction = await Transaction.findOneAndUpdate(
+      { _id: id, type: 'invoice' },
       { $set: updateData },
       { new: true, runValidators: true }
     ).lean();
 
-    if (!updatedInvoice) {
+    if (!updatedTransaction) {
       console.log('❌ Invoice not found for update:', id);
       return NextResponse.json(
         { error: 'Invoice not found' },
@@ -81,7 +81,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      invoice: updatedInvoice
+      invoice: updatedTransaction
     });
 
   } catch (error) {
