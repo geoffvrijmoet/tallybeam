@@ -1,6 +1,7 @@
 import { ParsedInvoiceData } from '../lib/services/ai';
 import { useState } from 'react';
 import { createEasternDate, createTodayEasternDateString, createFutureDateString } from '../lib/utils';
+import { InvoiceDisplay } from './InvoiceDisplay';
 
 interface InvoicePreviewProps {
   data: ParsedInvoiceData;
@@ -9,34 +10,17 @@ interface InvoicePreviewProps {
 
 export function InvoicePreview({ data, invoiceNumber }: InvoicePreviewProps) {
   const [venmoUsername, setVenmoUsername] = useState('yourvenmo');
-  const [isEditingVenmo, setIsEditingVenmo] = useState(false);
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
   const [customDueDate, setCustomDueDate] = useState<string | null>(null);
-  const [isEditingDueDate, setIsEditingDueDate] = useState(false);
   const [customInvoiceDate, setCustomInvoiceDate] = useState<string | null>(null);
-  const [isEditingInvoiceDate, setIsEditingInvoiceDate] = useState(false);
-  
-
 
   // Use custom due date if set, otherwise use parsed data or default to 30 days from now in Eastern time
   const effectiveDueDate = customDueDate || data.dueDate || createFutureDateString(30);
   
   // Use custom invoice date if set, otherwise use today's date in Eastern time
   const effectiveInvoiceDate = customInvoiceDate || createTodayEasternDateString();
-  
-  const dueDate = createEasternDate(effectiveDueDate).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  const invoiceDate = createEasternDate(effectiveInvoiceDate).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
 
   const handleCopyLink = async () => {
     try {
@@ -55,7 +39,7 @@ export function InvoicePreview({ data, invoiceNumber }: InvoicePreviewProps) {
           dueDate: effectiveDueDate,
           issueDate: effectiveInvoiceDate,
           paymentMethod: 'venmo',
-          venmoUsername: venmoUsername, // This gets mapped to venmoUsername in the API
+          venmoUsername: venmoUsername,
           currency: 'USD'
         }),
       });
@@ -153,6 +137,30 @@ export function InvoicePreview({ data, invoiceNumber }: InvoicePreviewProps) {
     }
   };
 
+  const handleDateUpdate = (field: 'dueDate' | 'issueDate', value: string) => {
+    if (field === 'dueDate') {
+      setCustomDueDate(value);
+    } else {
+      setCustomInvoiceDate(value);
+    }
+  };
+
+  const handleVenmoUpdate = (username: string) => {
+    setVenmoUsername(username);
+  };
+
+  // Convert parsed data to the format expected by InvoiceDisplay
+  const invoiceData = {
+    clientName: data.clientName,
+    clientEmail: undefined,
+    amount: data.amount,
+    description: data.description,
+    notes: undefined,
+    currency: 'USD',
+    paymentMethod: 'venmo',
+    venmoUsername: venmoUsername,
+  };
+
   return (
     <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-fade-in">
       {/* Preview Header */}
@@ -166,164 +174,16 @@ export function InvoicePreview({ data, invoiceNumber }: InvoicePreviewProps) {
         </div>
       </div>
 
-      {/* Invoice Content */}
-      <div className="p-8 bg-white">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Invoice</h1>
-            <p className="text-sm text-gray-600">
-              {invoiceNumber ? `#${invoiceNumber}` : '#TB-2024-0001'}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600 flex items-center justify-end space-x-2">
-              <span>Invoice Date:</span>
-              {isEditingInvoiceDate ? (
-                <input
-                  type="date"
-                  value={effectiveInvoiceDate}
-                  onChange={(e) => setCustomInvoiceDate(e.target.value)}
-                  onBlur={() => setIsEditingInvoiceDate(false)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      setIsEditingInvoiceDate(false);
-                    }
-                  }}
-                  className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-600"
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => setIsEditingInvoiceDate(true)}
-                  className="text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-2 py-1 rounded transition-colors duration-200 border border-transparent hover:border-gray-200"
-                >
-                  {invoiceDate}
-                </button>
-              )}
-              <span className="text-xs text-gray-400">(click to edit)</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Invoice Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Bill To:</h3>
-            <p className="text-lg font-medium text-gray-900">{data.clientName}</p>
-          </div>
-          <div className="md:text-right">
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Due Date:</span>
-                <div className="flex items-center space-x-2">
-                  {isEditingDueDate ? (
-                    <input
-                      type="date"
-                      value={effectiveDueDate}
-                      onChange={(e) => setCustomDueDate(e.target.value)}
-                      onBlur={() => setIsEditingDueDate(false)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          setIsEditingDueDate(false);
-                        }
-                      }}
-                      className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-900 font-medium"
-                      autoFocus
-                    />
-                  ) : (
-                    <button
-                      onClick={() => setIsEditingDueDate(true)}
-                      className="text-sm font-medium text-gray-900 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors duration-200 border border-transparent hover:border-gray-200"
-                    >
-                      {dueDate}
-                    </button>
-                  )}
-                  <span className="text-xs text-gray-500">(click to edit)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Invoice Items */}
-        <div className="mb-8">
-          <div className="bg-gray-50 rounded-lg p-1">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left">
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider text-right">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white rounded-md">
-                <tr>
-                  <td className="px-4 py-4 text-sm text-gray-900 rounded-l-md">
-                    {data.description}
-                  </td>
-                  <td className="px-4 py-4 text-sm font-semibold text-gray-900 text-right rounded-r-md">
-                    ${data.amount.toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Total */}
-        <div className="flex justify-end mb-8">
-          <div className="w-64">
-            <div className="flex justify-between py-2 border-t border-gray-200">
-              <span className="text-sm text-gray-600">Subtotal:</span>
-              <span className="text-sm font-medium text-gray-900">${data.amount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between py-2 border-t-2 border-gray-300">
-              <span className="text-base font-semibold text-gray-900">Total:</span>
-              <span className="text-base font-bold text-gray-900">${data.amount.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Instructions */}
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">Payment Instructions</h4>
-          <div className="text-sm text-blue-800">
-            <p className="mb-2">Please send payment via:</p>
-            <div className="flex items-center space-x-2">
-              <span className="font-medium">Venmo</span>
-              {isEditingVenmo ? (
-                <input
-                  type="text"
-                  value={venmoUsername}
-                  onChange={(e) => setVenmoUsername(e.target.value)}
-                  onBlur={() => setIsEditingVenmo(false)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      setIsEditingVenmo(false);
-                    }
-                  }}
-                  className="px-2 py-1 text-sm border border-blue-300 rounded bg-white text-blue-900 font-mono"
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => setIsEditingVenmo(true)}
-                  className="font-mono text-blue-900 hover:text-blue-700 hover:bg-blue-100 px-2 py-1 rounded transition-colors duration-200 border border-transparent hover:border-blue-200"
-                >
-                  @{venmoUsername}
-                </button>
-              )}
-              <span className="text-xs text-blue-600">(click to edit)</span>
-            </div>
-          </div>
-        </div>
-
-
-      </div>
+      {/* Invoice Display */}
+      <InvoiceDisplay
+        data={invoiceData}
+        invoiceNumber={invoiceNumber}
+        dueDate={effectiveDueDate}
+        issueDate={effectiveInvoiceDate}
+        isEditable={true}
+        onDateUpdate={handleDateUpdate}
+        onVenmoUpdate={handleVenmoUpdate}
+      />
 
       {/* Preview Actions */}
       <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { InvoiceService } from '../../../lib/services/invoiceService';
-import { CreateInvoiceRequest } from '../../../lib/models/Transaction';
+import { CreateInvoiceRequest, Transaction } from '../../../lib/models/Transaction';
 import { createEasternDate, createTodayEasternDateString, createFutureDateString } from '../../../lib/utils';
 
 export async function POST(request: NextRequest) {
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         success: true, 
         invoiceNumber: savedTransaction.transactionNumber,
         _id: savedTransaction._id,
+        id: savedTransaction._id, // Add this for frontend compatibility
         invoice: savedTransaction
       },
       { status: 201 }
@@ -83,9 +84,6 @@ export async function GET(request: NextRequest) {
     if (status) {
       filter.invoiceStatus = status; // Use invoiceStatus instead of status
     }
-    
-    // Import Transaction model
-    const { Transaction } = await import('../../../lib/models/Transaction');
     
     const transactions = await Transaction
       .find(filter)

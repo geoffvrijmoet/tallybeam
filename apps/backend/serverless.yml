@@ -1,0 +1,37 @@
+service: tallybeam-api
+
+plugins:
+  - serverless-esbuild # Add this plugin
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1 # Or your preferred region
+
+functions:
+  # This function corresponds to your OLD /api/invoices POST route
+  createInvoice:
+    handler: src/handlers/invoices.create # Points to the 'create' function in the invoices.js file
+    events:
+      - http:
+          path: /invoices
+          method: post
+          cors: true # CRITICAL for allowing your frontend to talk to it
+
+  # This function corresponds to your OLD /api/invoices GET route
+  getInvoices:
+    handler: src/handlers/invoices.list
+    events:
+      - http:
+          path: /invoices
+          method: get
+          cors: true
+
+  # ... Define a function for every single API route you have ...
+  getAccounts:
+    handler: src/handlers/accounting/accounts.get
+    events:
+      - http:
+          path: /accounting/accounts
+          method: get
+          cors: true

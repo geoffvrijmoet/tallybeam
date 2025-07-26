@@ -8,7 +8,9 @@ export class InvoiceService {
     await connectToDatabase();
     
     // Generate invoice number
-    const invoiceNumber = (Transaction as any).generateInvoiceNumber();
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const invoiceNumber = `TB-${timestamp}-${random}`;
     
     // Create the transaction document with invoice type
     const transaction = new Transaction({

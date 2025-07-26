@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 
@@ -20,11 +20,14 @@
 *.pem
 .env*
 !.env.example
+Thumbs.db
+
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # local env files
 .env*.local
@@ -40,6 +43,7 @@ next-env.d.ts
 # IDE
 .idea
 .vscode
+.cursor
 
 # Scripts
 scripts/create-suppliers.ts
@@ -53,3 +57,14 @@ scripts/dedupe-transactions.ts
 *.woff2
 *.pdf
 public/fonts/
+
+# --- Frontend (Next.js) Specific ---
+# List the full path to frontend-specific build artifacts
+apps/frontend/.next/
+apps/frontend/out/
+
+# --- Backend (Serverless Framework) Specific ---
+# List the full path to backend-specific build artifacts
+apps/backend/.serverless/
+apps/backend/serverless.yml.bak # Serverless framework backups
+apps/backend/.esbuild/
