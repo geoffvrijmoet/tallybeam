@@ -5,8 +5,10 @@ plugins:
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: us-east-1 # Or your preferred region
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
 
 functions:
   # This function corresponds to your OLD /api/invoices POST route
@@ -35,3 +37,14 @@ functions:
           path: /accounting/accounts
           method: get
           cors: true
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk'] # aws-sdk is already available in the Lambda environment
+    target: 'node18'
+    define: { 'require.resolve': undefined }
+    platform: 'node'
+    concurrency: 10
