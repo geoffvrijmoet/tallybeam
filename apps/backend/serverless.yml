@@ -1,14 +1,19 @@
 service: tallybeam-api
 
-plugins:
-  - serverless-esbuild # Add this plugin
-
 provider:
   name: aws
   runtime: nodejs20.x
   region: us-east-1 # Or your preferred region
   environment:
     MONGODB_URI: ${env:MONGODB_URI}
+    COGNITO_USER_POOL_ID: !Ref CognitoUserPool
+    COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+
+
+plugins:
+  - serverless-domain-manager
+
+
 
 functions:
   # This function corresponds to your OLD /api/invoices POST route
@@ -18,7 +23,6 @@ functions:
       - http:
           path: /invoices
           method: post
-          cors: true # CRITICAL for allowing your frontend to talk to it
 
   # This function corresponds to your OLD /api/invoices GET route
   getInvoices:
@@ -27,7 +31,6 @@ functions:
       - http:
           path: /invoices
           method: get
-          cors: true
 
   # ... Define a function for every single API route you have ...
   getAccounts:
@@ -36,15 +39,189 @@ functions:
       - http:
           path: /accounting/accounts
           method: get
-          cors: true
+
+  getTransactions:
+    handler: src/handlers/accounting/transactions.get
+    events:
+      - http:
+          path: /accounting/transactions
+          method: get
+
+  # User sync function
+  syncUser:
+    handler: src/handlers/user.sync
+    events:
+      - http:
+          path: /user/sync
+          method: post
+
+  # Get user function
+  getUser:
+    handler: src/handlers/user.get
+    events:
+      - http:
+          path: /user
+          method: get
+
+  # CORS OPTIONS handlers
+  userSyncOptions:
+    handler: src/handlers/user.options
+    events:
+      - http:
+          path: /user/sync
+          method: options
+
+  userGetOptions:
+    handler: src/handlers/user.options
+    events:
+      - http:
+          path: /user
+          method: options
+
+  accountsOptions:
+    handler: src/handlers/accounting.options
+    events:
+      - http:
+          path: /accounting/accounts
+          method: options
+
+  transactionsOptions:
+    handler: src/handlers/accounting.options
+    events:
+      - http:
+          path: /accounting/transactions
+          method: options
+
+  invoicesOptions:
+    handler: src/handlers/invoices.options
+    events:
+      - http:
+          path: /invoices
+          method: options
 
 custom:
-  esbuild:
-    bundle: true
-    minify: false
-    sourcemap: true
-    exclude: ['aws-sdk'] # aws-sdk is already available in the Lambda environment
-    target: 'node18'
-    define: { 'require.resolve': undefined }
-    platform: 'node'
-    concurrency: 10
+  customDomain:
+    domainName: api.tallybeam.com
+    certificateName: api.tallybeam.com # Make sure this exactly matches your issued cert
+    createRoute53Record: false
+    endpointType: 'edge'
+    securityPolicy: tls_1_2
+    autoDomain: true 
+    autoDomainWaitFor: 60 # Seconds to wait for domain to be ready
+
+
+
+
+resources:
+  Resources:
+    # Global CORS configuration
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: DEFAULT_4XX
+        RestApiId: !Ref ApiGatewayRestApi
+
+    GatewayResponseDefault5XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: DEFAULT_5XX
+        RestApiId: !Ref ApiGatewayRestApi
+
+    GatewayResponseUnauthorized:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: UNAUTHORIZED
+        RestApiId: !Ref ApiGatewayRestApi
+
+    GatewayResponseMissingAuthToken:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: MISSING_AUTHENTICATION_TOKEN
+        RestApiId: !Ref ApiGatewayRestApi
+
+    # Defines the User Pool itself
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-user-pool-${sls:stage}
+        Schema:
+          - Name: email
+            Required: true
+            Mutable: true
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+        # Remove auto-verification to require manual email verification
+        # AutoVerifiedAttributes:
+        #   - email
+
+    # Cognito User Pool Domain
+    CognitoUserPoolDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        Domain: tallybeam-auth-${sls:stage}
+        UserPoolId: !Ref CognitoUserPool
+
+    # Google Identity Provider
+    GoogleIdentityProvider:
+      Type: AWS::Cognito::UserPoolIdentityProvider
+      Properties:
+        UserPoolId: !Ref CognitoUserPool
+        ProviderName: Google
+        ProviderType: Google
+        ProviderDetails:
+          client_id: ${env:GOOGLE_CLIENT_ID}
+          client_secret: ${env:GOOGLE_CLIENT_SECRET}
+          authorize_scopes: email profile openid
+        AttributeMapping:
+          email: email
+          given_name: given_name
+          family_name: family_name
+          name: name
+          picture: picture
+
+    # Defines the "App Client" your frontend will use
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-client-${sls:stage}
+        UserPoolId: !Ref CognitoUserPool
+        ExplicitAuthFlows:
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        SupportedIdentityProviders:
+          - COGNITO
+          - Google
+        GenerateSecret: false # Important for public web clients
+        AllowedOAuthFlows:
+          - code
+        AllowedOAuthScopes:
+          - email
+          - openid
+          - profile
+        CallbackURLs:
+          - http://localhost:3000/auth/callback
+          - http://localhost:3000/
+          - https://tallybeam.com/auth/callback
+          - https://tallybeam.com/
+        LogoutURLs:
+          - http://localhost:3000/
+          - https://tallybeam.com/
+        AllowedOAuthFlowsUserPoolClient: true

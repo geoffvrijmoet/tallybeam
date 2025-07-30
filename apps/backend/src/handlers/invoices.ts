@@ -3,6 +3,23 @@ import { InvoiceService } from '../services/invoiceService';
 import { CreateInvoiceRequest } from '../models/Transaction';
 import { createEasternDate, createTodayEasternDateString, createFutureDateString } from '../lib/utils';
 
+// OPTIONS handler for CORS preflight
+export const options = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  console.log('🔧 Handling OPTIONS request for CORS preflight');
+  
+  return {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Max-Age': '86400',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ message: 'CORS preflight successful' })
+  };
+};
+
 export const create = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     // Parse the request body

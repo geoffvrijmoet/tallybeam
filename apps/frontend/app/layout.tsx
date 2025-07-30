@@ -44,7 +44,7 @@ export const metadata = {
   },
 };
 import './globals.css';
-import { ClerkProvider } from '@clerk/nextjs';
+import AmplifyProvider from '../components/AmplifyProvider';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -58,9 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-white antialiased font-sans">
-        <ClerkProvider>
+        <AmplifyProvider>
           {children}
-        </ClerkProvider>
+        </AmplifyProvider>
       </body>
     </html>
   );

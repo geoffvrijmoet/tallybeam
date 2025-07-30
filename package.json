@@ -2,6 +2,6 @@
     "name": "tallybeam-monorepo",
     "private": true,
     "workspaces": [
-      "apps/*"
+        "apps/*"
     ]
-  }
+}

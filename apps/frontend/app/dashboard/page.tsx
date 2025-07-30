@@ -1,38 +1,94 @@
 "use client";
 
-import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getCurrentUser, signOut } from "aws-amplify/auth";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isLoaded && !user) {
-      router.push('/sign-in/[[...sign-in]]');
-      return;
-    }
+    const checkAuth = async () => {
+      try {
+        console.log('🔧 Checking authentication...');
+        
+        // First, check if we have tokens stored in sessionStorage from manual OAuth
+        const storedTokens = sessionStorage.getItem('cognito_tokens');
+        
+        if (storedTokens) {
+          try {
+            const tokens = JSON.parse(storedTokens);
+            console.log('✅ Using stored tokens for authentication');
+            
+            // Set user from stored tokens
+            setUser(tokens.user_info);
+            setIsLoaded(true);
+            
+            // Use stored tokens for API calls
+            syncUserWithTokens(tokens);
+            fetchInvoicesWithTokens(tokens);
+            fetchAccountsWithTokens(tokens);
+            fetchTransactionsWithTokens(tokens);
+            
+            return; // Don't try Amplify auth
+          } catch (tokenError) {
+            console.error('❌ Error parsing stored tokens:', tokenError);
+          }
+        }
+        
+        // Fallback: try Amplify authentication
+        console.log('🔧 Trying Amplify authentication...');
+        const currentUser = await getCurrentUser();
+        console.log('✅ Amplify authentication successful');
+        setUser(currentUser);
+        setIsLoaded(true);
+        
+        if (currentUser) {
+          // Sync user with MongoDB and fetch data
+          syncUser();
+          fetchInvoices();
+          fetchAccounts();
+          fetchTransactions();
+        }
+      } catch (error) {
+        console.error('❌ Authentication failed:', error);
+        setIsLoaded(true);
+        router.push('/sign-in/[[...sign-in]]');
+      }
+    };
 
-    if (user) {
-      // Sync user with MongoDB and fetch data
-      syncUser();
-      fetchInvoices();
-      fetchAccounts();
-      fetchTransactions();
-    }
-  }, [user, isLoaded, router]);
+    checkAuth();
+  }, [router]);
 
   const syncUser = async () => {
     try {
-      await fetch('/api/user/sync', { method: 'POST' });
-      // Also setup default chart of accounts
-      await fetch('/api/accounting/setup', { method: 'POST' });
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        await fetch(`${apiBaseUrl}/user/sync`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        // Also setup default chart of accounts
+        await fetch(`${apiBaseUrl}/accounting/setup`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
     } catch (error) {
       console.error('Error syncing user:', error);
     }
@@ -40,10 +96,20 @@ export default function DashboardPage() {
 
   const fetchInvoices = async () => {
     try {
-      const response = await fetch('/api/invoices');
-      if (response.ok) {
-        const data = await response.json();
-        setInvoices(data.invoices || []);
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const response = await fetch(`${apiBaseUrl}/invoices`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setInvoices(data.invoices || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -54,10 +120,20 @@ export default function DashboardPage() {
 
   const fetchAccounts = async () => {
     try {
-      const response = await fetch('/api/accounting/accounts');
-      if (response.ok) {
-        const data = await response.json();
-        setAccounts(data.accounts || []);
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAccounts(data.accounts || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching accounts:', error);
@@ -66,13 +142,105 @@ export default function DashboardPage() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/accounting/transactions');
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTransactions(data.transactions || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
+  // Functions to use stored tokens for API calls
+  const syncUserWithTokens = async (tokens: any) => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      await fetch(`${apiBaseUrl}/user/sync`, { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('✅ User synced with stored tokens');
+    } catch (error) {
+      console.error('Error syncing user with stored tokens:', error);
+    }
+  };
+
+  const fetchInvoicesWithTokens = async (tokens: any) => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      const response = await fetch(`${apiBaseUrl}/invoices`, {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInvoices(data.invoices || []);
+      }
+    } catch (error) {
+      console.error('Error fetching invoices with stored tokens:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAccountsWithTokens = async (tokens: any) => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAccounts(data.accounts || []);
+      }
+    } catch (error) {
+      console.error('Error fetching accounts with stored tokens:', error);
+    }
+  };
+
+  const fetchTransactionsWithTokens = async (tokens: any) => {
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setTransactions(data.transactions || []);
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error fetching transactions with stored tokens:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+              router.push('/sign-in/[[...sign-in]]');
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -99,12 +267,12 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {user.firstName || user.emailAddresses[0]?.emailAddress}!
+                Welcome back, {user.firstName || user.email || user.username}!
               </h1>
               <p className="text-gray-600 mt-2">Manage your invoices and payments</p>
             </div>
             <button
-              onClick={() => signOut()}
+              onClick={handleSignOut}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center space-x-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
