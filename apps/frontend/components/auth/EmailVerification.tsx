@@ -27,7 +27,7 @@ export default function EmailVerification({ email, onVerificationComplete }: Ema
       });
       
       onVerificationComplete();
-      router.push('/sign-in');
+      router.push('/sign-in/[[...sign-in]]');
     } catch (error) {
       console.error('Verification error:', error);
       setError(error instanceof Error ? error.message : 'Verification failed');

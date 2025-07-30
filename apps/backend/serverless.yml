@@ -63,6 +63,14 @@ functions:
           path: /user
           method: get
 
+  # Global OPTIONS handler for all paths
+  globalOptions:
+    handler: src/handlers/cors.options
+    events:
+      - http:
+          path: /{proxy+}
+          method: options
+
   # CORS OPTIONS handlers
   userSyncOptions:
     handler: src/handlers/cors.options
@@ -108,6 +116,17 @@ custom:
     securityPolicy: tls_1_2
     autoDomain: true 
     autoDomainWaitFor: 60 # Seconds to wait for domain to be ready
+
+  # Global CORS configuration
+  cors:
+    origin: '*'
+    headers:
+      - Content-Type
+      - Authorization
+      - X-Amz-Date
+      - X-Api-Key
+      - X-Amz-Security-Token
+    allowCredentials: false
 
 
 

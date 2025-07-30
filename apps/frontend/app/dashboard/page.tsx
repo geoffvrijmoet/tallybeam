@@ -165,7 +165,8 @@ export default function DashboardPage() {
   // Functions to use stored tokens for API calls
   const syncUserWithTokens = async (tokens: any) => {
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
       
       // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/user/sync`, { 
@@ -189,7 +190,8 @@ export default function DashboardPage() {
 
   const fetchInvoicesWithTokens = async (tokens: any) => {
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
       
       // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/invoices`, {
@@ -217,7 +219,8 @@ export default function DashboardPage() {
 
   const fetchAccountsWithTokens = async (tokens: any) => {
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
       
       // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
@@ -243,7 +246,8 @@ export default function DashboardPage() {
 
   const fetchTransactionsWithTokens = async (tokens: any) => {
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
       
       // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
