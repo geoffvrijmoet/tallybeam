@@ -10,11 +10,11 @@ export default function SignOut() {
     try {
       await signOut();
       console.log('✅ Successfully signed out');
-      router.push('/sign-in');
+      router.push('/sign-in/[[...sign-in]]');
     } catch (error) {
       console.error('Sign out error:', error);
       // Even if there's an error, redirect to sign-in
-      router.push('/sign-in');
+      router.push('/sign-in/[[...sign-in]]');
     }
   };
 

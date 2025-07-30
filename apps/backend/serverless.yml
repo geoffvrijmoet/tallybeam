@@ -65,35 +65,35 @@ functions:
 
   # CORS OPTIONS handlers
   userSyncOptions:
-    handler: src/handlers/user.options
+    handler: src/handlers/cors.options
     events:
       - http:
           path: /user/sync
           method: options
 
   userGetOptions:
-    handler: src/handlers/user.options
+    handler: src/handlers/cors.options
     events:
       - http:
           path: /user
           method: options
 
   accountsOptions:
-    handler: src/handlers/accounting.options
+    handler: src/handlers/cors.options
     events:
       - http:
           path: /accounting/accounts
           method: options
 
   transactionsOptions:
-    handler: src/handlers/accounting.options
+    handler: src/handlers/cors.options
     events:
       - http:
           path: /accounting/transactions
           method: options
 
   invoicesOptions:
-    handler: src/handlers/invoices.options
+    handler: src/handlers/cors.options
     events:
       - http:
           path: /invoices

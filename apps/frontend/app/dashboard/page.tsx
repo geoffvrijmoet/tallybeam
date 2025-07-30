@@ -166,14 +166,22 @@ export default function DashboardPage() {
   const syncUserWithTokens = async (tokens: any) => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
-      await fetch(`${apiBaseUrl}/user/sync`, { 
+      
+      // Make a simple request to avoid CORS preflight
+      const response = await fetch(`${apiBaseUrl}/user/sync`, { 
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`,
-          'Content-Type': 'application/json'
-        }
+          'Authorization': `Bearer ${tokens.access_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
       });
-      console.log('✅ User synced with stored tokens');
+      
+      if (response.ok) {
+        console.log('✅ User synced with stored tokens');
+      } else {
+        console.error('❌ User sync failed:', response.status, response.statusText);
+      }
     } catch (error) {
       console.error('Error syncing user with stored tokens:', error);
     }
@@ -182,15 +190,23 @@ export default function DashboardPage() {
   const fetchInvoicesWithTokens = async (tokens: any) => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      
+      // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/invoices`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`,
-          'Content-Type': 'application/json'
-        }
+          'Authorization': `Bearer ${tokens.access_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
       });
+      
       if (response.ok) {
         const data = await response.json();
         setInvoices(data.invoices || []);
+        console.log('✅ Invoices fetched successfully');
+      } else {
+        console.error('❌ Invoices fetch failed:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching invoices with stored tokens:', error);
@@ -202,15 +218,23 @@ export default function DashboardPage() {
   const fetchAccountsWithTokens = async (tokens: any) => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      
+      // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`,
-          'Content-Type': 'application/json'
-        }
+          'Authorization': `Bearer ${tokens.access_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
       });
+      
       if (response.ok) {
         const data = await response.json();
         setAccounts(data.accounts || []);
+        console.log('✅ Accounts fetched successfully');
+      } else {
+        console.error('❌ Accounts fetch failed:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching accounts with stored tokens:', error);
@@ -220,15 +244,23 @@ export default function DashboardPage() {
   const fetchTransactionsWithTokens = async (tokens: any) => {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+      
+      // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`,
-          'Content-Type': 'application/json'
-        }
+          'Authorization': `Bearer ${tokens.access_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
       });
+      
       if (response.ok) {
         const data = await response.json();
         setTransactions(data.transactions || []);
+        console.log('✅ Transactions fetched successfully');
+      } else {
+        console.error('❌ Transactions fetch failed:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching transactions with stored tokens:', error);
