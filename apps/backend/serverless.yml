@@ -34,14 +34,14 @@ functions:
 
   # ... Define a function for every single API route you have ...
   getAccounts:
-    handler: src/handlers/accounting/accounts.get
+    handler: src/handlers/accounting.accounts
     events:
       - http:
           path: /accounting/accounts
           method: get
 
   getTransactions:
-    handler: src/handlers/accounting/transactions.get
+    handler: src/handlers/accounting.transactions
     events:
       - http:
           path: /accounting/transactions

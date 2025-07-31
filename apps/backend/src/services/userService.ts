@@ -7,22 +7,44 @@ export class UserService {
     try {
       await connectToDatabase();
       
+      console.log('🔍 [UserService] Cognito user data:', JSON.stringify(cognitoUser, null, 2));
+      console.log('🔍 [UserService] Available fields:', Object.keys(cognitoUser));
+      console.log('🔍 [UserService] Email:', cognitoUser.email);
+      console.log('🔍 [UserService] Given name:', cognitoUser.given_name);
+      console.log('🔍 [UserService] Family name:', cognitoUser.family_name);
+      console.log('🔍 [UserService] Name:', cognitoUser.name);
+      console.log('🔍 [UserService] Picture:', cognitoUser.picture);
+      
       let user = await (UserModel as IUserModel).findOne({ cognitoId: cognitoUser.sub });
       if (!user) {
+        // Extract email from token
+        const email = cognitoUser.email || '';
+        if (!email) {
+          throw new Error('Email is required but not found in token');
+        }
+        
+        // Use email prefix as fallback for missing name
+        const emailPrefix = email.split('@')[0];
+        const firstName = cognitoUser.given_name || cognitoUser.name?.split(' ')[0] || emailPrefix;
+        const lastName = cognitoUser.family_name || cognitoUser.name?.split(' ').slice(1).join(' ') || '';
+        
         user = new UserModel({
           cognitoId: cognitoUser.sub,
-          email: cognitoUser.email || '',
-          firstName: cognitoUser.given_name || cognitoUser.name?.split(' ')[0] || '',
-          lastName: cognitoUser.family_name || cognitoUser.name?.split(' ').slice(1).join(' ') || '',
+          email: email,
+          firstName: firstName,
+          lastName: lastName,
           imageUrl: cognitoUser.picture || '',
           lastLoginAt: new Date()
         });
         await user.save();
         console.log('✅ Created new user for Cognito ID:', cognitoUser.sub);
       } else {
+        // Update existing user, but don't overwrite existing name if token doesn't have it
         user.email = cognitoUser.email || user.email;
-        user.firstName = cognitoUser.given_name || cognitoUser.name?.split(' ')[0] || user.firstName;
-        user.lastName = cognitoUser.family_name || cognitoUser.name?.split(' ').slice(1).join(' ') || user.lastName;
+        if (cognitoUser.given_name || cognitoUser.name) {
+          user.firstName = cognitoUser.given_name || cognitoUser.name?.split(' ')[0] || user.firstName;
+          user.lastName = cognitoUser.family_name || cognitoUser.name?.split(' ').slice(1).join(' ') || user.lastName;
+        }
         user.imageUrl = cognitoUser.picture || user.imageUrl;
         user.lastLoginAt = new Date();
         await user.save();

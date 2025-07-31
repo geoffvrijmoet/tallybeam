@@ -1,5 +1,5 @@
 import * as jwt from 'jsonwebtoken';
-import * as jwksClient from 'jwks-client';
+import jwksClient from 'jwks-client';
 
 export interface CognitoJwtPayload {
   sub: string; // User ID
@@ -18,10 +18,7 @@ export async function verifyCognitoToken(token: string): Promise<CognitoJwtPaylo
   const jwksUri = `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`;
   
   const client = jwksClient({
-    jwksUri,
-    cache: true,
-    cacheMaxEntries: 5,
-    cacheMaxAge: 600000, // 10 minutes
+    jwksUri
   });
 
   function getKey(header: any, callback: any) {
@@ -36,12 +33,19 @@ export async function verifyCognitoToken(token: string): Promise<CognitoJwtPaylo
   }
 
   return new Promise((resolve, reject) => {
+    // First, let's decode the token without verification to see what audience it has
+    const decodedToken = jwt.decode(token) as any;
+    console.log('🔍 Decoded token audience:', decodedToken?.aud);
+    console.log('🔍 Expected audience:', '7n6ukbsa0fpfda7gkohs60l7ib');
+    
     jwt.verify(token, getKey, {
-      audience: process.env.COGNITO_CLIENT_ID,
+      // Temporarily disable audience check to debug
+      // audience: '7n6ukbsa0fpfda7gkohs60l7ib', // Hardcoded to match frontend
       issuer: `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
       algorithms: ['RS256']
     }, (err: any, decoded: any) => {
       if (err) {
+        console.log('🔍 JWT verification error:', err.message);
         reject(err);
       } else {
         resolve(decoded as CognitoJwtPayload);

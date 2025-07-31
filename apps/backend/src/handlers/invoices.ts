@@ -117,3 +117,45 @@ export const create = async (event: APIGatewayProxyEvent): Promise<APIGatewayPro
     };
   }
 };
+
+export const list = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    console.log('📋 Getting invoices list...');
+    
+    // For now, we'll handle non-authenticated users (userId will be 'anonymous')
+    // TODO: Add AWS Cognito authentication later
+    const userId = undefined; // This will default to 'anonymous' in the service
+
+    const invoices = await InvoiceService.getInvoices(userId);
+
+    console.log('✅ Retrieved invoices:', invoices.length);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: JSON.stringify({
+        success: true,
+        invoices: invoices
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ Error getting invoices:', error);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: JSON.stringify({ error: 'Internal server error' })
+    };
+  }
+};

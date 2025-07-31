@@ -31,118 +31,114 @@ export const options = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   };
 };
 
-export const accounts = {
-  get: async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    try {
-      console.log('🔧 Getting accounts...');
-      
-      // Verify authentication
-      const authHeader = event.headers.Authorization || event.headers.authorization;
-      if (!authHeader) {
-        return {
-          statusCode: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS'
-          },
-          body: JSON.stringify({ error: 'Authorization header required' })
-        };
-      }
-
-      const token = authHeader.replace('Bearer ', '');
-      const cognitoUser = await verifyCognitoToken(token);
-      console.log('✅ Authenticated user:', cognitoUser.sub);
-
-      // TODO: Replace with actual database query
-      console.log('✅ Returning mock accounts data');
-      
+export const accounts = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    console.log('🔧 Getting accounts...');
+    
+    // Verify authentication
+    const authHeader = event.headers.Authorization || event.headers.authorization;
+    if (!authHeader) {
       return {
-        statusCode: 200,
+        statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           'Access-Control-Allow-Methods': 'GET, OPTIONS'
         },
-        body: JSON.stringify({
-          success: true,
-          accounts: mockAccounts
-        })
-      };
-
-    } catch (error) {
-      console.error('❌ Error getting accounts:', error);
-      
-      return {
-        statusCode: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS'
-        },
-        body: JSON.stringify({ error: 'Internal server error' })
+        body: JSON.stringify({ error: 'Authorization header required' })
       };
     }
+
+    const token = authHeader.replace('Bearer ', '');
+    const cognitoUser = await verifyCognitoToken(token);
+    console.log('✅ Authenticated user:', cognitoUser.sub);
+
+    // TODO: Replace with actual database query
+    console.log('✅ Returning mock accounts data');
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: JSON.stringify({
+        success: true,
+        accounts: mockAccounts
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ Error getting accounts:', error);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: JSON.stringify({ error: 'Internal server error' })
+    };
   }
 };
 
-export const transactions = {
-  get: async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    try {
-      console.log('🔧 Getting transactions...');
-      
-      // Verify authentication
-      const authHeader = event.headers.Authorization || event.headers.authorization;
-      if (!authHeader) {
-        return {
-          statusCode: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS'
-          },
-          body: JSON.stringify({ error: 'Authorization header required' })
-        };
-      }
-
-      const token = authHeader.replace('Bearer ', '');
-      const cognitoUser = await verifyCognitoToken(token);
-      console.log('✅ Authenticated user:', cognitoUser.sub);
-
-      // TODO: Replace with actual database query
-      console.log('✅ Returning mock transactions data');
-      
+export const transactions = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    console.log('🔧 Getting transactions...');
+    
+    // Verify authentication
+    const authHeader = event.headers.Authorization || event.headers.authorization;
+    if (!authHeader) {
       return {
-        statusCode: 200,
+        statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           'Access-Control-Allow-Methods': 'GET, OPTIONS'
         },
-        body: JSON.stringify({
-          success: true,
-          transactions: mockTransactions
-        })
-      };
-
-    } catch (error) {
-      console.error('❌ Error getting transactions:', error);
-      
-      return {
-        statusCode: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS'
-        },
-        body: JSON.stringify({ error: 'Internal server error' })
+        body: JSON.stringify({ error: 'Authorization header required' })
       };
     }
+
+    const token = authHeader.replace('Bearer ', '');
+    const cognitoUser = await verifyCognitoToken(token);
+    console.log('✅ Authenticated user:', cognitoUser.sub);
+
+    // TODO: Replace with actual database query
+    console.log('✅ Returning mock transactions data');
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: JSON.stringify({
+        success: true,
+        transactions: mockTransactions
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ Error getting transactions:', error);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+      },
+      body: JSON.stringify({ error: 'Internal server error' })
+    };
   }
 }; 

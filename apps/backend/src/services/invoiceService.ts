@@ -47,4 +47,15 @@ export class InvoiceService {
     
     return savedTransaction;
   }
+
+  static async getInvoices(userId?: string) {
+    await connectToDatabase();
+    
+    // For now, return all invoices (we can filter by userId later when authentication is implemented)
+    const invoices = await Transaction.find({ type: 'invoice' })
+      .sort({ date: -1 }) // Most recent first
+      .lean();
+    
+    return invoices;
+  }
 } 

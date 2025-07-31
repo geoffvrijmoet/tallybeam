@@ -165,14 +165,22 @@ export default function DashboardPage() {
   // Functions to use stored tokens for API calls
   const syncUserWithTokens = async (tokens: any) => {
     try {
-      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      // Temporarily use direct API Gateway URL to test if custom domain is the issue
       const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      const fullUrl = `${apiBaseUrl}/user/sync`;
+      
+      console.log('🔍 [syncUserWithTokens] Environment check:');
+      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      console.log('  - apiBaseUrl:', apiBaseUrl);
+      console.log('  - Full URL:', fullUrl);
+      console.log('  - Token exists:', !!tokens.access_token);
       
       // Make a simple request to avoid CORS preflight
-      const response = await fetch(`${apiBaseUrl}/user/sync`, { 
+      console.log('🔍 [syncUserWithTokens] Making fetch request...');
+      const response = await fetch(fullUrl, { 
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`
+          'Authorization': `Bearer ${tokens.id_token}`
         },
         mode: 'cors',
         credentials: 'omit'
@@ -190,14 +198,22 @@ export default function DashboardPage() {
 
   const fetchInvoicesWithTokens = async (tokens: any) => {
     try {
-      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      // Temporarily use direct API Gateway URL to test
       const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      const fullUrl = `${apiBaseUrl}/invoices`;
+      
+      console.log('🔍 [fetchInvoicesWithTokens] Environment check:');
+      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      console.log('  - apiBaseUrl:', apiBaseUrl);
+      console.log('  - Full URL:', fullUrl);
+      console.log('  - Token exists:', !!tokens.access_token);
       
       // Make a simple request to avoid CORS preflight
-      const response = await fetch(`${apiBaseUrl}/invoices`, {
+      console.log('🔍 [fetchInvoicesWithTokens] Making fetch request...');
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`
+          'Authorization': `Bearer ${tokens.id_token}`
         },
         mode: 'cors',
         credentials: 'omit'
@@ -219,14 +235,22 @@ export default function DashboardPage() {
 
   const fetchAccountsWithTokens = async (tokens: any) => {
     try {
-      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      // Temporarily use direct API Gateway URL to test
       const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      const fullUrl = `${apiBaseUrl}/accounting/accounts`;
+      
+      console.log('🔍 [fetchAccountsWithTokens] Environment check:');
+      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      console.log('  - apiBaseUrl:', apiBaseUrl);
+      console.log('  - Full URL:', fullUrl);
+      console.log('  - Token exists:', !!tokens.access_token);
       
       // Make a simple request to avoid CORS preflight
-      const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
+      console.log('🔍 [fetchAccountsWithTokens] Making fetch request...');
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`
+          'Authorization': `Bearer ${tokens.id_token}`
         },
         mode: 'cors',
         credentials: 'omit'
@@ -246,14 +270,14 @@ export default function DashboardPage() {
 
   const fetchTransactionsWithTokens = async (tokens: any) => {
     try {
-      // Temporarily use direct API Gateway URL to bypass custom domain CORS issue
+      // Temporarily use direct API Gateway URL to test
       const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
       
       // Make a simple request to avoid CORS preflight
       const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`
+          'Authorization': `Bearer ${tokens.id_token}`
         },
         mode: 'cors',
         credentials: 'omit'
@@ -339,8 +363,8 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-gray-500">Invoices and expenses appear here.</p>
                 </div>
               ) : (
-                transactions.slice(0, 5).map((transaction: any) => (
-                  <div key={transaction._id} className="px-6 py-4 hover:bg-gray-50">
+                transactions.slice(0, 5).map((transaction: any, index: number) => (
+                  <div key={transaction._id || `transaction-${index}`} className="px-6 py-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
@@ -356,23 +380,23 @@ export default function DashboardPage() {
                               transaction.type === 'expense' ? 'text-red-600' :
                               'text-gray-600'
                             }`}>
-                              {transaction.type.charAt(0).toUpperCase()}
+                              {(transaction.type || 'T').charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{transaction.description}</p>
-                          <p className="text-sm text-gray-500">#{transaction.transactionNumber} • {new Date(transaction.date).toLocaleDateString()}</p>
+                          <p className="text-sm font-medium text-gray-900">{transaction.description || 'No description'}</p>
+                          <p className="text-sm text-gray-500">#{transaction.transactionNumber || 'N/A'} • {transaction.date ? new Date(transaction.date).toLocaleDateString() : 'No date'}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <span className="text-sm font-medium text-gray-900">${transaction.totalDebit.toFixed(2)}</span>
+                        <span className="text-sm font-medium text-gray-900">${(transaction.totalDebit || 0).toFixed(2)}</span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           transaction.status === 'posted' ? 'bg-green-100 text-green-800' :
                           transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {transaction.status}
+                          {transaction.status || 'unknown'}
                         </span>
                       </div>
                     </div>

@@ -29,12 +29,22 @@ export const options = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
 
 export const sync = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  console.log('🔍 [syncUser] Request received');
+  console.log('🔍 [syncUser] Headers:', JSON.stringify(event.headers, null, 2));
+  console.log('🔍 [syncUser] Method:', event.httpMethod);
+  console.log('🔍 [syncUser] Path:', event.path);
+  
   try {
     // Get the authorization header
     const authHeader = event.headers.Authorization || event.headers.authorization;
+    console.log('🔍 [syncUser] Auth header:', authHeader ? 'Present' : 'Missing');
+    
     const token = authHeader?.substring(7); // Remove 'Bearer ' prefix
+    console.log('🔍 [syncUser] Token length:', token ? token.length : 0);
+    console.log('🔍 [syncUser] Token preview:', token ? `${token.substring(0, 20)}...` : 'None');
 
     if (!token) {
+      console.log('❌ [syncUser] No token provided');
       return {
         statusCode: 401,
         headers: {
@@ -49,8 +59,12 @@ export const sync = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
     }
 
     // Verify the Cognito token and get user info
+    console.log('🔍 [syncUser] Attempting to verify token...');
     const cognitoUser = await verifyCognitoToken(token);
+    console.log('🔍 [syncUser] Token verification result:', cognitoUser ? 'Success' : 'Failed');
+    
     if (!cognitoUser) {
+      console.log('❌ [syncUser] Token verification failed');
       return {
         statusCode: 401,
         headers: {
