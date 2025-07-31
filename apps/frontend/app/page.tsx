@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { CreateInvoiceRequest } from '../lib/models/Transaction';
 import { ParsedInvoiceData } from '../lib/services/ai';
@@ -10,7 +9,6 @@ import { InvoicePreview } from '../components/InvoicePreview';
 type ViewMode = 'landing' | 'instant' | 'success';
 
 export default function Page() {
-  const { user, isLoaded } = useUser();
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const [inputValue, setInputValue] = useState('');
@@ -140,13 +138,7 @@ export default function Page() {
   };
 
   const handleSignInClick = () => {
-    if (user) {
-      // User is already signed in, go to dashboard
-      router.push('/dashboard');
-    } else {
-      // User is not signed in, go to sign-in page
-      window.location.href = '/sign-in';
-    }
+    router.push('/sign-in/[[...sign-in]]');
   };
 
   // Landing Page View
@@ -200,7 +192,7 @@ export default function Page() {
                   </svg>
                 </button>
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {user ? 'Dashboard' : 'Sign In'}
+                  Sign In
                 </h3>
               </div>
 

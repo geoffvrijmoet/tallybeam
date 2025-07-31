@@ -1,38 +1,94 @@
 "use client";
 
-import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getCurrentUser, signOut } from "aws-amplify/auth";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isLoaded && !user) {
-      router.push('/sign-in/[[...sign-in]]');
-      return;
-    }
+    const checkAuth = async () => {
+      try {
+        console.log('🔧 Checking authentication...');
+        
+        // First, check if we have tokens stored in sessionStorage from manual OAuth
+        const storedTokens = sessionStorage.getItem('cognito_tokens');
+        
+        if (storedTokens) {
+          try {
+            const tokens = JSON.parse(storedTokens);
+            console.log('✅ Using stored tokens for authentication');
+            
+            // Set user from stored tokens
+            setUser(tokens.user_info);
+            setIsLoaded(true);
+            
+            // Use stored tokens for API calls
+            syncUserWithTokens(tokens);
+            fetchInvoicesWithTokens(tokens);
+            fetchAccountsWithTokens(tokens);
+            fetchTransactionsWithTokens(tokens);
+            
+            return; // Don't try Amplify auth
+          } catch (tokenError) {
+            console.error('❌ Error parsing stored tokens:', tokenError);
+          }
+        }
+        
+        // Fallback: try Amplify authentication
+        console.log('🔧 Trying Amplify authentication...');
+        const currentUser = await getCurrentUser();
+        console.log('✅ Amplify authentication successful');
+        setUser(currentUser);
+        setIsLoaded(true);
+        
+        if (currentUser) {
+          // Sync user with MongoDB and fetch data
+          syncUser();
+          fetchInvoices();
+          fetchAccounts();
+          fetchTransactions();
+        }
+      } catch (error) {
+        console.error('❌ Authentication failed:', error);
+        setIsLoaded(true);
+        router.push('/sign-in/[[...sign-in]]');
+      }
+    };
 
-    if (user) {
-      // Sync user with MongoDB and fetch data
-      syncUser();
-      fetchInvoices();
-      fetchAccounts();
-      fetchTransactions();
-    }
-  }, [user, isLoaded, router]);
+    checkAuth();
+  }, [router]);
 
   const syncUser = async () => {
     try {
-      await fetch('/api/user/sync', { method: 'POST' });
-      // Also setup default chart of accounts
-      await fetch('/api/accounting/setup', { method: 'POST' });
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        await fetch(`${apiBaseUrl}/user/sync`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        // Also setup default chart of accounts
+        await fetch(`${apiBaseUrl}/accounting/setup`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
     } catch (error) {
       console.error('Error syncing user:', error);
     }
@@ -40,10 +96,20 @@ export default function DashboardPage() {
 
   const fetchInvoices = async () => {
     try {
-      const response = await fetch('/api/invoices');
-      if (response.ok) {
-        const data = await response.json();
-        setInvoices(data.invoices || []);
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const response = await fetch(`${apiBaseUrl}/invoices`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setInvoices(data.invoices || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -54,10 +120,20 @@ export default function DashboardPage() {
 
   const fetchAccounts = async () => {
     try {
-      const response = await fetch('/api/accounting/accounts');
-      if (response.ok) {
-        const data = await response.json();
-        setAccounts(data.accounts || []);
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAccounts(data.accounts || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching accounts:', error);
@@ -66,13 +142,165 @@ export default function DashboardPage() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/accounting/transactions');
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data.transactions || []);
+      const session = await fetchAuthSession();
+      const token = session.tokens?.accessToken?.toString();
+      if (token) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTransactions(data.transactions || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    }
+  };
+
+  // Functions to use stored tokens for API calls
+  const syncUserWithTokens = async (tokens: any) => {
+    try {
+      // Temporarily use direct API Gateway URL to test if custom domain is the issue
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      const fullUrl = `${apiBaseUrl}/user/sync`;
+      
+      console.log('🔍 [syncUserWithTokens] Environment check:');
+      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      console.log('  - apiBaseUrl:', apiBaseUrl);
+      console.log('  - Full URL:', fullUrl);
+      console.log('  - Token exists:', !!tokens.access_token);
+      
+      // Make a simple request to avoid CORS preflight
+      console.log('🔍 [syncUserWithTokens] Making fetch request...');
+      const response = await fetch(fullUrl, { 
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokens.id_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (response.ok) {
+        console.log('✅ User synced with stored tokens');
+      } else {
+        console.error('❌ User sync failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error syncing user with stored tokens:', error);
+    }
+  };
+
+  const fetchInvoicesWithTokens = async (tokens: any) => {
+    try {
+      // Temporarily use direct API Gateway URL to test
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      const fullUrl = `${apiBaseUrl}/invoices`;
+      
+      console.log('🔍 [fetchInvoicesWithTokens] Environment check:');
+      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      console.log('  - apiBaseUrl:', apiBaseUrl);
+      console.log('  - Full URL:', fullUrl);
+      console.log('  - Token exists:', !!tokens.access_token);
+      
+      // Make a simple request to avoid CORS preflight
+      console.log('🔍 [fetchInvoicesWithTokens] Making fetch request...');
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${tokens.id_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setInvoices(data.invoices || []);
+        console.log('✅ Invoices fetched successfully');
+      } else {
+        console.error('❌ Invoices fetch failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching invoices with stored tokens:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAccountsWithTokens = async (tokens: any) => {
+    try {
+      // Temporarily use direct API Gateway URL to test
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      const fullUrl = `${apiBaseUrl}/accounting/accounts`;
+      
+      console.log('🔍 [fetchAccountsWithTokens] Environment check:');
+      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+      console.log('  - apiBaseUrl:', apiBaseUrl);
+      console.log('  - Full URL:', fullUrl);
+      console.log('  - Token exists:', !!tokens.access_token);
+      
+      // Make a simple request to avoid CORS preflight
+      console.log('🔍 [fetchAccountsWithTokens] Making fetch request...');
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${tokens.id_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAccounts(data.accounts || []);
+        console.log('✅ Accounts fetched successfully');
+      } else {
+        console.error('❌ Accounts fetch failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching accounts with stored tokens:', error);
+    }
+  };
+
+  const fetchTransactionsWithTokens = async (tokens: any) => {
+    try {
+      // Temporarily use direct API Gateway URL to test
+      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
+      
+      // Make a simple request to avoid CORS preflight
+      const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${tokens.id_token}`
+        },
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data.transactions || []);
+        console.log('✅ Transactions fetched successfully');
+      } else {
+        console.error('❌ Transactions fetch failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions with stored tokens:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+              router.push('/sign-in/[[...sign-in]]');
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -99,12 +327,12 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {user.firstName || user.emailAddresses[0]?.emailAddress}!
+                Welcome back, {user.firstName || user.email || user.username}!
               </h1>
               <p className="text-gray-600 mt-2">Manage your invoices and payments</p>
             </div>
             <button
-              onClick={() => signOut()}
+              onClick={handleSignOut}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center space-x-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,8 +363,8 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-gray-500">Invoices and expenses appear here.</p>
                 </div>
               ) : (
-                transactions.slice(0, 5).map((transaction: any) => (
-                  <div key={transaction._id} className="px-6 py-4 hover:bg-gray-50">
+                transactions.slice(0, 5).map((transaction: any, index: number) => (
+                  <div key={transaction._id || `transaction-${index}`} className="px-6 py-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
@@ -152,23 +380,23 @@ export default function DashboardPage() {
                               transaction.type === 'expense' ? 'text-red-600' :
                               'text-gray-600'
                             }`}>
-                              {transaction.type.charAt(0).toUpperCase()}
+                              {(transaction.type || 'T').charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{transaction.description}</p>
-                          <p className="text-sm text-gray-500">#{transaction.transactionNumber} • {new Date(transaction.date).toLocaleDateString()}</p>
+                          <p className="text-sm font-medium text-gray-900">{transaction.description || 'No description'}</p>
+                          <p className="text-sm text-gray-500">#{transaction.transactionNumber || 'N/A'} • {transaction.date ? new Date(transaction.date).toLocaleDateString() : 'No date'}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <span className="text-sm font-medium text-gray-900">${transaction.totalDebit.toFixed(2)}</span>
+                        <span className="text-sm font-medium text-gray-900">${(transaction.totalDebit || 0).toFixed(2)}</span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           transaction.status === 'posted' ? 'bg-green-100 text-green-800' :
                           transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {transaction.status}
+                          {transaction.status || 'unknown'}
                         </span>
                       </div>
                     </div>

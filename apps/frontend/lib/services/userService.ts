@@ -1,36 +1,29 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
 import connectToDatabase from '../db';
 import UserModel, { IUserModel } from '../models/User';
+import { verifyCognitoToken } from '../server/cognito-verify';
+import { CognitoJwtPayload } from '../cognito';
 
 export class UserService {
   /**
    * Get or create a user document for the current authenticated user
    */
-  static async getCurrentUser() {
+  static async getCurrentUser(authToken?: string) {
     try {
-      const { userId } = await auth();
-      
-      if (!userId) {
-        throw new Error('User not authenticated');
+      if (!authToken) {
+        throw new Error('Authentication token required');
       }
 
       await connectToDatabase();
       
-      // Get user from Clerk
-      const clerkUser = await currentUser();
+      // Verify the Cognito JWT token
+      const cognitoUser = await verifyCognitoToken(authToken);
       
-      if (!clerkUser) {
-        throw new Error('Clerk user not found');
+      if (!cognitoUser) {
+        throw new Error('Invalid authentication token');
       }
 
       // Use the static method to find or create user
-      const user = await (UserModel as IUserModel).findOrCreateFromClerk({
-        clerkId: clerkUser.id,
-        emailAddresses: clerkUser.emailAddresses || [],
-        firstName: clerkUser.firstName || '',
-        lastName: clerkUser.lastName || '',
-        imageUrl: clerkUser.imageUrl || ''
-      });
+      const user = await (UserModel as IUserModel).findOrCreateFromCognito(cognitoUser);
 
       return user;
     } catch (error) {
@@ -40,14 +33,14 @@ export class UserService {
   }
 
   /**
-   * Get user by Clerk ID
+   * Get user by Cognito ID
    */
-  static async getUserByClerkId(clerkId: string) {
+  static async getUserByCognitoId(cognitoId: string) {
     try {
       await connectToDatabase();
-      return await (UserModel as IUserModel).findByClerkId(clerkId);
+      return await (UserModel as IUserModel).findByCognitoId(cognitoId);
     } catch (error) {
-      console.error('❌ Error in getUserByClerkId:', error);
+      console.error('❌ Error in getUserByCognitoId:', error);
       throw error;
     }
   }
