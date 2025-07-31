@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { signUp, signInWithRedirect } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import EmailVerification from './EmailVerification';
+import { useAppNavigation } from '../../lib/navigation';
+
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -15,6 +17,8 @@ export default function SignUp() {
   const [success, setSuccess] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const router = useRouter();
+  const navigation = useAppNavigation();
+
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +107,7 @@ export default function SignUp() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Verified!</h2>
             <p className="text-gray-600">Your account has been successfully verified. You can now sign in.</p>
             <button
-              onClick={() => router.push('/sign-in/[[...sign-in]]')}
+              onClick={() => navigation.goToSignIn()}
               className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Go to Sign In

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { confirmSignUp } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
+import { useAppNavigation } from '../../lib/navigation';
 
 interface EmailVerificationProps {
   email: string;
@@ -14,6 +15,8 @@ export default function EmailVerification({ email, onVerificationComplete }: Ema
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const navigation = useAppNavigation();
+
 
   const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +30,7 @@ export default function EmailVerification({ email, onVerificationComplete }: Ema
       });
       
       onVerificationComplete();
-      router.push('/sign-in/[[...sign-in]]');
+      navigation.goToSignIn();
     } catch (error) {
       console.error('Verification error:', error);
       setError(error instanceof Error ? error.message : 'Verification failed');

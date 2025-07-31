@@ -2,19 +2,20 @@
 
 import { signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
+import { useAppNavigation } from '../../lib/navigation';
 
 export default function SignOut() {
   const router = useRouter();
-
+  const navigation = useAppNavigation();
   const handleSignOut = async () => {
     try {
       await signOut();
       console.log('✅ Successfully signed out');
-      router.push('/sign-in/[[...sign-in]]');
+      navigation.goToSignIn();
     } catch (error) {
       console.error('Sign out error:', error);
       // Even if there's an error, redirect to sign-in
-      router.push('/sign-in/[[...sign-in]]');
+      navigation.goToSignIn();
     }
   };
 

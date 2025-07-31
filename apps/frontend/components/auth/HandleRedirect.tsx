@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { getCurrentUser, fetchUserAttributes, signInWithRedirect, fetchAuthSession, signIn } from 'aws-amplify/auth';
-import { useRouter } from 'next/navigation';
+import { useAppNavigation } from '../../lib/navigation';
 
 export default function HandleRedirect() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const processedRef = useRef(false);
 
   // Manual OAuth code exchange function
@@ -123,14 +123,14 @@ export default function HandleRedirect() {
           console.error('❌ OAuth error:', errorParam);
           setError(`Authentication failed: ${errorParam}`);
           setTimeout(() => {
-            router.push('/sign-in/[[...sign-in]]');
+            navigation.goToSignIn();
           }, 3000);
           return;
         }
 
         if (!code) {
           console.log('❌ No OAuth code found, redirecting to sign-in');
-          router.push('/sign-in/[[...sign-in]]');
+          navigation.goToSignIn();
           return;
         }
 
@@ -210,7 +210,7 @@ export default function HandleRedirect() {
               }
               
               console.log('🔄 Redirecting to dashboard...');
-              router.push('/dashboard');
+              navigation.goToDashboard();
               return;
             } else {
               console.warn('⚠️ Could not get user info:', await userInfoResponse.text());
@@ -221,7 +221,7 @@ export default function HandleRedirect() {
           
           // If we have tokens but can't get user info, still redirect to dashboard
           console.log('🔄 Redirecting to dashboard with tokens...');
-          router.push('/dashboard');
+          navigation.goToDashboard();
           return;
         }
 
@@ -236,7 +236,7 @@ export default function HandleRedirect() {
           
           if (session?.tokens) {
             console.log('✅ Amplify session fetch successful!');
-            router.push('/dashboard');
+            navigation.goToDashboard();
             return;
           }
         } catch (sessionError) {
@@ -244,20 +244,20 @@ export default function HandleRedirect() {
         }
 
         console.log('❌ No valid session found, redirecting to sign-in');
-        router.push('/sign-in/[[...sign-in]]');
+        navigation.goToSignIn();
 
       } catch (error) {
         console.error('❌ Redirect handling error:', error);
         setError('Authentication failed. Please try again.');
         setTimeout(() => {
-          router.push('/sign-in/[[...sign-in]]');
+          navigation.goToSignIn();
         }, 3000);
       } finally {
         setLoading(false);
       }
     };
     handleRedirect();
-  }, [router]);
+  }, [navigation]);
 
   if (loading) {
     return (
@@ -282,7 +282,7 @@ export default function HandleRedirect() {
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
-              onClick={() => router.push('/sign-in/[[...sign-in]]')}
+              onClick={() => navigation.goToSignIn()}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Try Again

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAppNavigation } from '../lib/navigation';
 import { CreateInvoiceRequest } from '../lib/models/Transaction';
 import { ParsedInvoiceData } from '../lib/services/ai';
 import { InvoicePreview } from '../components/InvoicePreview';
@@ -9,7 +9,7 @@ import { InvoicePreview } from '../components/InvoicePreview';
 type ViewMode = 'landing' | 'instant' | 'success';
 
 export default function Page() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -138,7 +138,7 @@ export default function Page() {
   };
 
   const handleSignInClick = () => {
-    router.push('/sign-in/[[...sign-in]]');
+    navigation.goToSignIn();
   };
 
   // Landing Page View

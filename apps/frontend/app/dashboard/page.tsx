@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useAppNavigation } from "../../lib/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser, signOut } from "aws-amplify/auth";
 import { fetchAuthSession } from "aws-amplify/auth";
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const navigation = useAppNavigation();
   const [user, setUser] = useState<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [invoices, setInvoices] = useState([]);
@@ -60,12 +60,12 @@ export default function DashboardPage() {
       } catch (error) {
         console.error('❌ Authentication failed:', error);
         setIsLoaded(true);
-        router.push('/sign-in/[[...sign-in]]');
+        navigation.goToSignIn();
       }
     };
 
     checkAuth();
-  }, [router]);
+  }, []); // Empty dependency array since checkAuth doesn't depend on navigation
 
   const syncUser = async () => {
     try {
@@ -298,7 +298,7 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     try {
       await signOut();
-              router.push('/sign-in/[[...sign-in]]');
+      navigation.goToSignIn();
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -347,7 +347,7 @@ export default function DashboardPage() {
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">Recent Transactions</h2>
               <button
-                onClick={() => router.push('/')}
+                onClick={() => navigation.goToHome()}
                 className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200"
               >
                 Create New Invoice
