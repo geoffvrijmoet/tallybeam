@@ -1,45 +1,27 @@
 import { Amplify } from 'aws-amplify';
 
-// Amplify v6 configuration format
+// Amplify v6 configuration format with OAuth enabled
+// Amplify automatically uses localStorage for token persistence
 const cognitoConfig = {
   Auth: {
     Cognito: {
       userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID!,
       userPoolClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
       region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1',
-      // Temporarily disable OAuth to prevent code consumption
-      // loginWith: {
-      //   oauth: {
-      //     domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN!,
-      //     scopes: ['email', 'openid', 'profile'],
-      //     redirectSignIn: [process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGNIN || 'http://localhost:3000/auth/callback'],
-      //     redirectSignOut: [process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGNOUT || 'http://localhost:3000/'],
-      //     responseType: 'code' as const
-      //   }
-      // }
-    }
-  }
-};
-
-// Alternative configuration format that might work better
-const alternativeConfig = {
-  Auth: {
-    Cognito: {
-      region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1',
-      userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID!,
-      userPoolClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
-      oauth: {
-        domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN!,
-        scope: ['email', 'openid', 'profile'],
-        redirectSignIn: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGNIN || 'http://localhost:3000/auth/callback',
-        redirectSignOut: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGNOUT || 'http://localhost:3000/',
-        responseType: 'code'
+      loginWith: {
+        oauth: {
+          domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN!,
+          scopes: ['email', 'openid', 'profile'],
+          redirectSignIn: [process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGNIN || 'http://localhost:3000/auth/callback'],
+          redirectSignOut: [process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGNOUT || 'http://localhost:3000/'],
+          responseType: 'code' as const
+        }
       }
     }
   }
 };
 
-// Legacy configuration format that's more commonly used
+// Legacy configuration format that's more commonly used and might work better with OAuth
 const legacyConfig = {
   Auth: {
     region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1',
@@ -79,10 +61,9 @@ export function configureAmplify() {
     throw new Error('Cognito configuration is incomplete. Please check your environment variables.');
   }
   
-  console.log('🔧 Using Amplify v6 configuration format (OAuth disabled for manual handling)...');
-  console.log('🔧 Configuration object:', JSON.stringify(cognitoConfig, null, 2));
+  // Use v6 configuration
+  console.log('🔧 Using Amplify v6 configuration');
   Amplify.configure(cognitoConfig);
-  console.log('✅ Amplify v6 configuration applied successfully (OAuth disabled)');
 }
 
 // JWT verification utilities

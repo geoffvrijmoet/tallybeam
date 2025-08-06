@@ -45,6 +45,7 @@ export const metadata = {
 };
 import './globals.css';
 import AmplifyProvider from '../components/AmplifyProvider';
+import SimpleAnimatedLayout from '../components/layout/SimpleAnimatedLayout';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -59,7 +60,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-white antialiased font-sans">
         <AmplifyProvider>
-          {children}
+          <SimpleAnimatedLayout>
+            {children}
+          </SimpleAnimatedLayout>
         </AmplifyProvider>
       </body>
     </html>

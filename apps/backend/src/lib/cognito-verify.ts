@@ -36,11 +36,10 @@ export async function verifyCognitoToken(token: string): Promise<CognitoJwtPaylo
     // First, let's decode the token without verification to see what audience it has
     const decodedToken = jwt.decode(token) as any;
     console.log('🔍 Decoded token audience:', decodedToken?.aud);
-    console.log('🔍 Expected audience:', '7n6ukbsa0fpfda7gkohs60l7ib');
+    console.log('🔍 Expected audience:', process.env.COGNITO_CLIENT_ID);
     
     jwt.verify(token, getKey, {
-      // Temporarily disable audience check to debug
-      // audience: '7n6ukbsa0fpfda7gkohs60l7ib', // Hardcoded to match frontend
+      audience: process.env.COGNITO_CLIENT_ID, // Use environment variable
       issuer: `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
       algorithms: ['RS256']
     }, (err: any, decoded: any) => {

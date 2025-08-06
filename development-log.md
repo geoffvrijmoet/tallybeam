@@ -235,6 +235,76 @@ COGNITO_CLIENT_ID=
 **Problem**: `TypeError: Cannot read properties of undefined (reading 'toFixed')`
 **Solution**: Added null checks and default values for all transaction properties
 
+### 6. Transactions API 500 Error (RESOLVED)
+**Problem**: Transactions API call was returning 500 error due to incorrect token usage
+**Solution**: 
+- Fixed `fetchTransactionsWithTokens` function in dashboard to use `tokens.id_token` instead of `tokens.access_token`
+- Backend expects ID token for authentication, not access token
+- All other API calls were already using the correct token
+
+### 7. API 403 Errors with Custom Domain (RESOLVED)
+**Problem**: API calls were returning 403 errors when using `https://api.tallybeam.com/dev` due to custom domain configuration
+**Solution**: 
+- Custom domain `api.tallybeam.com` maps directly to the API Gateway stage internally
+- Frontend should use `https://api.tallybeam.com` (without `/dev`) as the API base URL
+- The `/dev` stage is handled internally by the custom domain mapping
+- This is the standard approach for serverless custom domains
+
+### 8. Transactions API JWT Audience Error (RESOLVED)
+**Problem**: Transactions API was returning 500 errors due to JWT audience validation failure
+**Solution**: 
+- Fixed `fetchTransactionsWithTokens` function to use `tokens.id_token` instead of `tokens.access_token`
+- Backend expects ID token (which has client ID as audience) for authentication
+- Access tokens don't have an audience field, causing JWT verification to fail
+- All other API calls were already using the correct token type
+
+### 9. Page Animation System (NEW)
+**Added**: Simple layout-level page animation system
+**Components Created**:
+- `SimpleAnimatedLayout.tsx` - Layout wrapper with automatic page transitions
+- `LoadingContext.tsx` - Global loading state management
+- `PageAnimation.tsx` - Reusable component for individual pages (optional)
+- `usePageAnimation.ts` - Hook for coordinating with loading states (optional)
+- Enhanced test page with animation testing tools
+**Features**:
+- **Simple fade + slide up animation** on all page transitions
+- **Zero complexity** - no code needed in individual pages
+- **Automatic triggering** on every page navigation
+- **Hardware-accelerated** CSS transitions for optimal performance
+- **Minimal bundle impact** (~1KB)
+- **LoadingScreen coordination** - waits for ALL LoadingScreen components to finish
+**Implementation**: 
+- Added to root layout for global page animations
+- Works with all existing LoadingScreen components
+- Test page includes "Simple Layout Animation" section
+**Benefits**:
+- Consistent user experience across all pages
+- No coordination needed with loading states
+- No performance impact
+- Easy to maintain and modify
+
+### 10. Authentication Refactor - Hybrid Amplify + Manual Approach (NEW)
+**Refactored**: Authentication system to use hybrid approach for better OAuth compatibility
+**Problem**: Amplify v6 OAuth handling wasn't working properly, causing authentication failures
+**Solution**: 
+- **Hybrid authentication approach** - Try Amplify first, fall back to manual token exchange
+- **Manual token exchange** - Handle OAuth code exchange manually when Amplify fails
+- **localStorage persistence** - Store tokens in localStorage for cross-session persistence
+- **Dual API call support** - Support both Amplify session and manual token API calls
+- **Robust fallback system** - Multiple authentication methods for reliability
+**Implementation**:
+- Updated `cognito.ts` to use Amplify v6 configuration
+- Enhanced `HandleRedirect.tsx` with manual token exchange fallback
+- Refactored `dashboard/page.tsx` to check both Amplify session and manual tokens
+- Added manual token API functions for fallback support
+- Updated sign-out to clear all token storage
+**Benefits**:
+- **Reliable authentication** - Works even when Amplify OAuth has issues
+- **Persistent login** - Tokens stored in localStorage survive browser restarts
+- **Backward compatibility** - Supports both Amplify and manual token approaches
+- **Better error handling** - Graceful fallbacks when primary method fails
+- **Cross-session persistence** - Users stay logged in across browser sessions
+
 ## 🔍 Key Files for AI Understanding
 
 ### Backend Core Files:

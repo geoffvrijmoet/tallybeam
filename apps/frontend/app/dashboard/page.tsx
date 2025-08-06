@@ -4,6 +4,7 @@ import { useAppNavigation } from "../../lib/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser, signOut } from "aws-amplify/auth";
 import { fetchAuthSession } from "aws-amplify/auth";
+import LoadingScreen from '../../components/ui/LoadingScreen';
 
 export default function DashboardPage() {
   const navigation = useAppNavigation();
@@ -14,49 +15,73 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('🔧 Checking authentication...');
+        console.log('🔧 Checking Amplify authentication...');
         
-        // First, check if we have tokens stored in sessionStorage from manual OAuth
-        const storedTokens = sessionStorage.getItem('cognito_tokens');
-        
-        if (storedTokens) {
-          try {
-            const tokens = JSON.parse(storedTokens);
-            console.log('✅ Using stored tokens for authentication');
+        // First try Amplify's built-in session management
+        try {
+          const session = await fetchAuthSession();
+          
+          if (session.tokens) {
+            console.log('✅ Amplify session found, user is authenticated');
             
-            // Set user from stored tokens
-            setUser(tokens.user_info);
+            // Get current user from Amplify
+            const currentUser = await getCurrentUser();
+            setUser(currentUser);
             setIsLoaded(true);
             
-            // Use stored tokens for API calls
-            syncUserWithTokens(tokens);
-            fetchInvoicesWithTokens(tokens);
-            fetchAccountsWithTokens(tokens);
-            fetchTransactionsWithTokens(tokens);
+            // Sync user with MongoDB and fetch data using Amplify tokens
+            syncUser();
+            fetchInvoices();
+            fetchAccounts();
+            fetchTransactions();
+            return;
+          }
+        } catch (sessionError) {
+          console.log('⚠️ Amplify session check failed:', sessionError);
+        }
+        
+        // Fallback: check for manually stored tokens in localStorage
+        console.log('🔧 Checking for manually stored tokens...');
+        const accessToken = localStorage.getItem('amplify-authenticator-authToken');
+        const idToken = localStorage.getItem('amplify-authenticator-idToken');
+        
+        if (accessToken && idToken) {
+          console.log('✅ Found manually stored tokens');
+          
+          // Create a mock user object from the ID token
+          try {
+            const tokenPayload = JSON.parse(atob(idToken.split('.')[1]));
+            const mockUser = {
+              username: tokenPayload.sub,
+              email: tokenPayload.email,
+              firstName: tokenPayload.given_name,
+              lastName: tokenPayload.family_name
+            };
             
-            return; // Don't try Amplify auth
+            setUser(mockUser);
+            setIsLoaded(true);
+            
+            // Use the tokens for API calls
+            syncUserWithManualTokens(accessToken, idToken);
+            fetchInvoicesWithManualTokens(accessToken, idToken);
+            fetchAccountsWithManualTokens(accessToken, idToken);
+            fetchTransactionsWithManualTokens(accessToken, idToken);
+            return;
           } catch (tokenError) {
-            console.error('❌ Error parsing stored tokens:', tokenError);
+            console.error('❌ Error parsing ID token:', tokenError);
+            localStorage.removeItem('amplify-authenticator-authToken');
+            localStorage.removeItem('amplify-authenticator-idToken');
           }
         }
         
-        // Fallback: try Amplify authentication
-        console.log('🔧 Trying Amplify authentication...');
-        const currentUser = await getCurrentUser();
-        console.log('✅ Amplify authentication successful');
-        setUser(currentUser);
+        console.log('❌ No valid authentication found');
         setIsLoaded(true);
-        
-        if (currentUser) {
-          // Sync user with MongoDB and fetch data
-          syncUser();
-          fetchInvoices();
-          fetchAccounts();
-          fetchTransactions();
-        }
+        navigation.goToSignIn();
       } catch (error) {
         console.error('❌ Authentication failed:', error);
         setIsLoaded(true);
@@ -72,7 +97,7 @@ export default function DashboardPage() {
       const session = await fetchAuthSession();
       const token = session.tokens?.accessToken?.toString();
       if (token) {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
         await fetch(`${apiBaseUrl}/user/sync`, { 
           method: 'POST',
           headers: {
@@ -99,7 +124,7 @@ export default function DashboardPage() {
       const session = await fetchAuthSession();
       const token = session.tokens?.accessToken?.toString();
       if (token) {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
         const response = await fetch(`${apiBaseUrl}/invoices`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -123,7 +148,7 @@ export default function DashboardPage() {
       const session = await fetchAuthSession();
       const token = session.tokens?.accessToken?.toString();
       if (token) {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
         const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -145,7 +170,7 @@ export default function DashboardPage() {
       const session = await fetchAuthSession();
       const token = session.tokens?.accessToken?.toString();
       if (token) {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tallybeam.com/dev';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
         const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -162,141 +187,96 @@ export default function DashboardPage() {
     }
   };
 
-  // Functions to use stored tokens for API calls
-  const syncUserWithTokens = async (tokens: any) => {
+
+
+  // Functions to use manually stored tokens
+  const syncUserWithManualTokens = async (accessToken: string, idToken: string) => {
     try {
-      // Temporarily use direct API Gateway URL to test if custom domain is the issue
-      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
-      const fullUrl = `${apiBaseUrl}/user/sync`;
-      
-      console.log('🔍 [syncUserWithTokens] Environment check:');
-      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
-      console.log('  - apiBaseUrl:', apiBaseUrl);
-      console.log('  - Full URL:', fullUrl);
-      console.log('  - Token exists:', !!tokens.access_token);
-      
-      // Make a simple request to avoid CORS preflight
-      console.log('🔍 [syncUserWithTokens] Making fetch request...');
-      const response = await fetch(fullUrl, { 
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      await fetch(`${apiBaseUrl}/user/sync`, { 
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokens.id_token}`
-        },
-        mode: 'cors',
-        credentials: 'omit'
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
       });
-      
-      if (response.ok) {
-        console.log('✅ User synced with stored tokens');
-      } else {
-        console.error('❌ User sync failed:', response.status, response.statusText);
-      }
     } catch (error) {
-      console.error('Error syncing user with stored tokens:', error);
+      console.error('Error syncing user with manual tokens:', error);
     }
   };
 
-  const fetchInvoicesWithTokens = async (tokens: any) => {
+  const fetchInvoicesWithManualTokens = async (accessToken: string, idToken: string) => {
     try {
-      // Temporarily use direct API Gateway URL to test
-      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
-      const fullUrl = `${apiBaseUrl}/invoices`;
-      
-      console.log('🔍 [fetchInvoicesWithTokens] Environment check:');
-      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
-      console.log('  - apiBaseUrl:', apiBaseUrl);
-      console.log('  - Full URL:', fullUrl);
-      console.log('  - Token exists:', !!tokens.access_token);
-      
-      // Make a simple request to avoid CORS preflight
-      console.log('🔍 [fetchInvoicesWithTokens] Making fetch request...');
-      const response = await fetch(fullUrl, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const response = await fetch(`${apiBaseUrl}/invoices`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.id_token}`
-        },
-        mode: 'cors',
-        credentials: 'omit'
+          'Authorization': `Bearer ${idToken}`
+        }
       });
       
       if (response.ok) {
         const data = await response.json();
         setInvoices(data.invoices || []);
-        console.log('✅ Invoices fetched successfully');
       } else {
         console.error('❌ Invoices fetch failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching invoices with stored tokens:', error);
+      console.error('Error fetching invoices with manual tokens:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchAccountsWithTokens = async (tokens: any) => {
+  const fetchAccountsWithManualTokens = async (accessToken: string, idToken: string) => {
     try {
-      // Temporarily use direct API Gateway URL to test
-      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
-      const fullUrl = `${apiBaseUrl}/accounting/accounts`;
-      
-      console.log('🔍 [fetchAccountsWithTokens] Environment check:');
-      console.log('  - NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
-      console.log('  - apiBaseUrl:', apiBaseUrl);
-      console.log('  - Full URL:', fullUrl);
-      console.log('  - Token exists:', !!tokens.access_token);
-      
-      // Make a simple request to avoid CORS preflight
-      console.log('🔍 [fetchAccountsWithTokens] Making fetch request...');
-      const response = await fetch(fullUrl, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const response = await fetch(`${apiBaseUrl}/accounting/accounts`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.id_token}`
-        },
-        mode: 'cors',
-        credentials: 'omit'
+          'Authorization': `Bearer ${idToken}`
+        }
       });
       
       if (response.ok) {
         const data = await response.json();
         setAccounts(data.accounts || []);
-        console.log('✅ Accounts fetched successfully');
       } else {
         console.error('❌ Accounts fetch failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching accounts with stored tokens:', error);
+      console.error('Error fetching accounts with manual tokens:', error);
     }
   };
 
-  const fetchTransactionsWithTokens = async (tokens: any) => {
+  const fetchTransactionsWithManualTokens = async (accessToken: string, idToken: string) => {
     try {
-      // Temporarily use direct API Gateway URL to test
-      const apiBaseUrl = 'https://yelptc4qye.execute-api.us-east-1.amazonaws.com/dev';
-      
-      // Make a simple request to avoid CORS preflight
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await fetch(`${apiBaseUrl}/accounting/transactions`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${tokens.id_token}`
-        },
-        mode: 'cors',
-        credentials: 'omit'
+          'Authorization': `Bearer ${idToken}`
+        }
       });
       
       if (response.ok) {
         const data = await response.json();
         setTransactions(data.transactions || []);
-        console.log('✅ Transactions fetched successfully');
       } else {
         console.error('❌ Transactions fetch failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching transactions with stored tokens:', error);
+      console.error('Error fetching transactions with manual tokens:', error);
     }
   };
 
   const handleSignOut = async () => {
     try {
+      // Clear manually stored tokens
+      localStorage.removeItem('amplify-authenticator-authToken');
+      localStorage.removeItem('amplify-authenticator-idToken');
+      localStorage.removeItem('amplify-authenticator-refreshToken');
+      
       await signOut();
       navigation.goToSignIn();
     } catch (error) {
@@ -306,12 +286,14 @@ export default function DashboardPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50/50 to-pink-50/30 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
+      <LoadingScreen 
+        title="Loading dashboard..." 
+        subtitle="Please wait while we load your dashboard."
+        spinnerType="custom"
+        spinnerColor="violet"
+        spinnerSize="medium"
+        className="bg-gradient-to-br from-blue-50 to-indigo-100"
+      />
     );
   }
 

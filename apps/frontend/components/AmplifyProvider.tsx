@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { configureAmplify } from '../lib/cognito';
+import LoadingScreen from './ui/LoadingScreen';
 
 export default function AmplifyProvider({ children }: { children: React.ReactNode }) {
   const [isConfigured, setIsConfigured] = useState(false);
@@ -18,12 +19,14 @@ export default function AmplifyProvider({ children }: { children: React.ReactNod
   // Don't render children until Amplify is configured
   if (!isConfigured) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <LoadingScreen 
+        title="" 
+        subtitle=""
+        spinnerType="custom"
+        spinnerColor="violet"
+        spinnerSize="medium"
+        className="bg-gradient-to-br from-blue-50 to-indigo-100"
+      />
     );
   }
 

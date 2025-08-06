@@ -1,0 +1,1 @@
+should i enable aws iam identity center? should my root user be the management account? it "creates an organization instance", what's an organization instance?
